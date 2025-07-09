@@ -55,6 +55,8 @@ namespace Jellyfin.Plugin.ClassicTV
                 return;
             }
 
+            _logger.LogInformation("GeneratePlaylistTask: Starting playlist generation for {SeriesCount} series", config.SeriesIds.Count);
+
             var fetcher = new EpisodeFetcher(_libraryManager);
 
             // Crear playlist para cada usuario
@@ -62,16 +64,18 @@ namespace Jellyfin.Plugin.ClassicTV
             {
                 try
                 {
+                    _logger.LogInformation("GeneratePlaylistTask: Processing user {Username}", user.Username);
+
                     var episodesBySeries = fetcher.GetUnwatchedEpisodesBySeries(config.SeriesIds, user);
                     var mixedEpisodes = EpisodeMixer.MixEpisodesRoundRobin(episodesBySeries);
 
-                    _logger.LogInformation("Processing {0} series for user {1} with total {2} unwatched episodes",
+                    _logger.LogInformation("GeneratePlaylistTask: Processing {SeriesCount} series for user {Username} with total {TotalEpisodes} unwatched episodes",
                         episodesBySeries.Count, user.Username, episodesBySeries.Values.Sum(e => e.Count));
-                    _logger.LogInformation("Mixed playlist for user {0} will contain {1} episodes", user.Username, mixedEpisodes.Count);
+                    _logger.LogInformation("GeneratePlaylistTask: Mixed playlist for user {Username} will contain {EpisodeCount} episodes", user.Username, mixedEpisodes.Count);
 
                     if (mixedEpisodes.Count == 0)
                     {
-                        _logger.LogInformation("No unwatched episodes for user {0}, skipping playlist creation", user.Username);
+                        _logger.LogInformation("GeneratePlaylistTask: No unwatched episodes for user {Username}, skipping playlist creation", user.Username);
                         continue;
                     }
 
@@ -83,11 +87,11 @@ namespace Jellyfin.Plugin.ClassicTV
                     };
 
                     await _playlistManager.CreatePlaylist(request);
-                    _logger.LogInformation("Playlist created for user {0} with {1} episodes", user.Username, mixedEpisodes.Count);
+                    _logger.LogInformation("GeneratePlaylistTask: Playlist created for user {Username} with {EpisodeCount} episodes", user.Username, mixedEpisodes.Count);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error creating playlist for user {0}", user.Username);
+                    _logger.LogError(ex, "GeneratePlaylistTask: Error creating playlist for user {Username}", user.Username);
                 }
             }
         }

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using MediaBrowser.Controller.Entities.TV;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.ClassicTV
 {
@@ -14,23 +15,32 @@ namespace Jellyfin.Plugin.ClassicTV
         {
             const int maxEpisodes = 1000; // Límite máximo de episodios
             var result = new List<Episode>();
-            var enumerators = seriesEpisodes.Values
-                .Select(list => list.GetEnumerator())
-                .ToList();
 
-            bool added;
+            // Crear listas de episodios para cada serie
+            var episodeLists = seriesEpisodes.Values.ToList();
+            var currentIndexes = new int[episodeLists.Count]; // Índices actuales para cada serie
+
+            bool hasMoreEpisodes;
             do
             {
-                added = false;
-                foreach (var enumerator in enumerators)
+                hasMoreEpisodes = false;
+
+                // Recorrer cada serie y tomar el siguiente episodio disponible
+                for (int i = 0; i < episodeLists.Count; i++)
                 {
-                    if (enumerator.MoveNext() && result.Count < maxEpisodes)
+                    var episodeList = episodeLists[i];
+                    var currentIndex = currentIndexes[i];
+
+                    // Si esta serie tiene más episodios disponibles
+                    if (currentIndex < episodeList.Count && result.Count < maxEpisodes)
                     {
-                        result.Add(enumerator.Current);
-                        added = true;
+                        var episode = episodeList[currentIndex];
+                        result.Add(episode);
+                        currentIndexes[i]++; // Avanzar al siguiente episodio de esta serie
+                        hasMoreEpisodes = true;
                     }
                 }
-            } while (added && result.Count < maxEpisodes);
+            } while (hasMoreEpisodes && result.Count < maxEpisodes);
 
             return result;
         }
