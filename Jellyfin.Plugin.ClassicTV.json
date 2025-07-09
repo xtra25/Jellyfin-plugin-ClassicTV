@@ -1,0 +1,9 @@
+{
+  "category": "General",
+  "guid": "eb5d7894-8eef-4b36-aa6f-5d124e828ce1",
+  "name": "ClassicTV",
+  "description": "Plugin para mezclar episodios de series seleccionadas manteniendo el orden interno de cada serie.",
+  "owner": "ClassicTV Plugin",
+  "version": "1.0.0.0",
+  "targetAbi": "10.9.0.0"
+}

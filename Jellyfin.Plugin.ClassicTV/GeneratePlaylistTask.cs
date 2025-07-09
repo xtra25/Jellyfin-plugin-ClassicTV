@@ -56,28 +56,40 @@ namespace Jellyfin.Plugin.ClassicTV
             }
 
             var fetcher = new EpisodeFetcher(_libraryManager);
-            var episodesBySeries = fetcher.GetOrderedEpisodesBySeries(config.SeriesIds);
-            var mixedEpisodes = EpisodeMixer.MixEpisodesRoundRobin(episodesBySeries);
 
-            _logger.LogInformation("Processing {0} series with total {1} episodes", episodesBySeries.Count, episodesBySeries.Values.Sum(e => e.Count));
-            _logger.LogInformation("Mixed playlist will contain {0} episodes", mixedEpisodes.Count);
-
-            var user = _userManager.Users.FirstOrDefault();
-            if (user == null || mixedEpisodes.Count == 0)
+            // Crear playlist para cada usuario
+            foreach (var user in _userManager.Users)
             {
-                _logger.LogWarning("Cannot create playlist: no user or episodes.");
-                return;
+                try
+                {
+                    var episodesBySeries = fetcher.GetUnwatchedEpisodesBySeries(config.SeriesIds, user);
+                    var mixedEpisodes = EpisodeMixer.MixEpisodesRoundRobin(episodesBySeries);
+
+                    _logger.LogInformation("Processing {0} series for user {1} with total {2} unwatched episodes",
+                        episodesBySeries.Count, user.Username, episodesBySeries.Values.Sum(e => e.Count));
+                    _logger.LogInformation("Mixed playlist for user {0} will contain {1} episodes", user.Username, mixedEpisodes.Count);
+
+                    if (mixedEpisodes.Count == 0)
+                    {
+                        _logger.LogInformation("No unwatched episodes for user {0}, skipping playlist creation", user.Username);
+                        continue;
+                    }
+
+                    var request = new PlaylistCreationRequest
+                    {
+                        Name = $"ClassicTV Playlist - {user.Username}",
+                        UserId = user.Id,
+                        ItemIdList = mixedEpisodes.Select(e => e.Id).ToList()
+                    };
+
+                    await _playlistManager.CreatePlaylist(request);
+                    _logger.LogInformation("Playlist created for user {0} with {1} episodes", user.Username, mixedEpisodes.Count);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error creating playlist for user {0}", user.Username);
+                }
             }
-
-            var request = new PlaylistCreationRequest
-            {
-                Name = "ClassicTV Playlist",
-                UserId = user.Id,
-                ItemIdList = mixedEpisodes.Select(e => e.Id).ToList()
-            };
-
-            await _playlistManager.CreatePlaylist(request);
-            _logger.LogInformation("Playlist created with {0} episodes", mixedEpisodes.Count);
         }
 
 

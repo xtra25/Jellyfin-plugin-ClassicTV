@@ -1,69 +1,130 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="utf-8">
-    <title>ClassicTV Plugin</title>
+    <title>ClassicTV Configuration</title>
+    <meta charset="utf-8" />
 </head>
 <body>
-    <div id="TemplateConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+    <div id="configPage" data-role="page" class="page type-interior pluginConfigurationPage">
         <div data-role="content">
             <div class="content-primary">
-                <form id="TemplateConfigForm">
+                <h2>Configuración ClassicTV</h2>
+                <form id="configForm">
                     <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="SeriesSelector">Selecciona las series para mezclar (Nombre [ID])</label>
-                        <select id="SeriesSelector" name="SeriesSelector" multiple size="12" class="emby-input">
-                            <!-- Las opciones se llenarán dinámicamente -->
+                        <label class="inputLabel inputLabelUnfocused" for="SeriesSelector">Selecciona las series para mezclar</label>
+                        <select id="SeriesSelector" name="SeriesSelector" multiple size="10" class="emby-input">
+                            <option value="">Cargando series...</option>
                         </select>
-                        <div class="fieldDescription">Selecciona varias series manteniendo pulsado Ctrl o Shift. Los episodios se mezclarán manteniendo el orden interno de cada serie.</div>
+                        <div class="fieldDescription">Selecciona varias series manteniendo pulsado Ctrl o Shift.</div>
                     </div>
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block emby-button">
-                            <span>Guardar selección</span>
+                            <span>Guardar</span>
                         </button>
                     </div>
                 </form>
             </div>
         </div>
         <script type="text/javascript">
-            var TemplateConfig = {
+            var ClassicTVConfig = {
                 pluginUniqueId: 'eb5d7894-8eef-4b36-aa6f-5d124e828ce1'
             };
 
-            document.querySelector('#TemplateConfigPage')
-                .addEventListener('pageshow', function() {
-                    Dashboard.showLoadingMsg();
-                    ApiClient.getPluginConfiguration(TemplateConfig.pluginUniqueId).then(function (config) {
-                        // Obtener todas las series
-                        ApiClient.getItems(null, { IncludeItemTypes: 'Series', Recursive: true, Fields: 'Id,Name' })
-                            .then(function (result) {
-                                var selector = document.querySelector('#SeriesSelector');
-                                selector.innerHTML = '';
-                                (result.Items || []).forEach(function (serie) {
-                                    var option = document.createElement('option');
-                                    option.value = serie.Id;
-                                    option.textContent = serie.Name + ' [' + serie.Id + ']';
-                                    if (config.SeriesIds && config.SeriesIds.indexOf(serie.Id) !== -1) {
-                                        option.selected = true;
-                                    }
-                                    selector.appendChild(option);
-                                });
-                                Dashboard.hideLoadingMsg();
-                            });
-                    });
-                });
-
-            document.querySelector('#TemplateConfigForm')
-                .addEventListener('submit', function(e) {
+            function loadSeries() {
+                console.log('ClassicTV: Loading series...');
                 Dashboard.showLoadingMsg();
-                ApiClient.getPluginConfiguration(TemplateConfig.pluginUniqueId).then(function (config) {
-                    // Guardar solo los IDs seleccionados
-                    var selected = Array.from(document.querySelector('#SeriesSelector').selectedOptions).map(function(opt){ return opt.value; });
-                    config.SeriesIds = selected;
-                    ApiClient.updatePluginConfiguration(TemplateConfig.pluginUniqueId, config).then(function (result) {
-                        Dashboard.processPluginConfigurationUpdateResult(result);
-                    });
-                });
 
+                // Primero obtener la configuración actual
+                ApiClient.getPluginConfiguration(ClassicTVConfig.pluginUniqueId).then(function (config) {
+                    console.log('ClassicTV: Got plugin config:', config);
+
+                    // Luego obtener todas las series
+                    ApiClient.getItems(null, {
+                        IncludeItemTypes: 'Series',
+                        Recursive: true,
+                        Fields: 'Id,Name',
+                        SortBy: 'Name',
+                        SortOrder: 'Ascending'
+                    }).then(function (result) {
+                        console.log('ClassicTV: Got series result:', result);
+
+                        var selector = document.querySelector('#SeriesSelector');
+                        selector.innerHTML = '';
+
+                        if (result.Items && result.Items.length > 0) {
+                            result.Items.forEach(function (serie) {
+                                var option = document.createElement('option');
+                                option.value = serie.Id;
+                                option.textContent = serie.Name;
+                                if (config.SeriesIds && config.SeriesIds.indexOf(serie.Id) !== -1) {
+                                    option.selected = true;
+                                }
+                                selector.appendChild(option);
+                            });
+                            console.log('ClassicTV: Loaded ' + result.Items.length + ' series');
+                        } else {
+                            var option = document.createElement('option');
+                            option.value = "";
+                            option.textContent = "No se encontraron series";
+                            option.disabled = true;
+                            selector.appendChild(option);
+                            console.log('ClassicTV: No series found');
+                        }
+
+                        Dashboard.hideLoadingMsg();
+                    }).catch(function(error) {
+                        console.error('ClassicTV: Error getting series:', error);
+                        var selector = document.querySelector('#SeriesSelector');
+                        selector.innerHTML = '<option value="">Error al cargar series</option>';
+                        Dashboard.hideLoadingMsg();
+                    });
+                }).catch(function(error) {
+                    console.error('ClassicTV: Error getting plugin config:', error);
+                    Dashboard.hideLoadingMsg();
+                });
+            }
+
+            function saveConfig() {
+                console.log('ClassicTV: Saving configuration...');
+                Dashboard.showLoadingMsg();
+
+                ApiClient.getPluginConfiguration(ClassicTVConfig.pluginUniqueId).then(function (config) {
+                    var selected = Array.from(document.querySelector('#SeriesSelector').selectedOptions).map(function(opt){
+                        return opt.value;
+                    });
+                    config.SeriesIds = selected;
+
+                    console.log('ClassicTV: Saving config:', config);
+
+                    ApiClient.updatePluginConfiguration(ClassicTVConfig.pluginUniqueId, config).then(function (result) {
+                        console.log('ClassicTV: Config saved successfully:', result);
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    }).catch(function(error) {
+                        console.error('ClassicTV: Error saving config:', error);
+                        Dashboard.hideLoadingMsg();
+                    });
+                }).catch(function(error) {
+                    console.error('ClassicTV: Error getting config for save:', error);
+                    Dashboard.hideLoadingMsg();
+                });
+            }
+
+            // Cargar series cuando se carga la página
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('ClassicTV: DOM loaded, loading series...');
+                loadSeries();
+            });
+
+            // También intentar cargar cuando la página se muestra
+            document.querySelector('#configPage').addEventListener('pageshow', function() {
+                console.log('ClassicTV: Page show event, loading series...');
+                loadSeries();
+            });
+
+            // Manejar el envío del formulario
+            document.querySelector('#configForm').addEventListener('submit', function(e) {
+                console.log('ClassicTV: Form submitted');
+                saveConfig();
                 e.preventDefault();
                 return false;
             });

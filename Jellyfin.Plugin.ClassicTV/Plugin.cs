@@ -6,6 +6,7 @@ using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.ClassicTV;
 
@@ -14,15 +15,21 @@ namespace Jellyfin.Plugin.ClassicTV;
 /// </summary>
 public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 {
+    private readonly ILogger<Plugin> _logger;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="Plugin"/> class.
     /// </summary>
     /// <param name="applicationPaths">Instance of the <see cref="IApplicationPaths"/> interface.</param>
     /// <param name="xmlSerializer">Instance of the <see cref="IXmlSerializer"/> interface.</param>
-    public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer)
+    /// <param name="logger">Instance of the <see cref="ILogger{Plugin}"/> interface.</param>
+    public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILogger<Plugin> logger)
         : base(applicationPaths, xmlSerializer)
     {
+        _logger = logger;
+        _logger.LogInformation("ClassicTV Plugin constructor called");
         Instance = this;
+        _logger.LogInformation("ClassicTV Plugin instance set");
     }
 
     /// <inheritdoc />
@@ -39,13 +46,26 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// <inheritdoc />
     public IEnumerable<PluginPageInfo> GetPages()
     {
-        return
-        [
-            new PluginPageInfo
+        _logger.LogInformation("ClassicTV Plugin GetPages() called");
+
+        try
+        {
+            var resourcePath = "Jellyfin.Plugin.ClassicTV.Configuration.configPage.html";
+            _logger.LogInformation("Registering configuration page with resource path: {ResourcePath}", resourcePath);
+
+            return new[]
             {
-                Name = Name,
-                EmbeddedResourcePath = "Jellyfin.Plugin.ClassicTV.Configuration.configPage.html"
-            }
-        ];
+                new PluginPageInfo
+                {
+                    Name = Name,
+                    EmbeddedResourcePath = resourcePath
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in GetPages() method");
+            return new PluginPageInfo[0];
+        }
     }
 }
