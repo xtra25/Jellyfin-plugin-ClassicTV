@@ -369,8 +369,8 @@ that material) supplement the terms of this License with terms:
     author attributions in that material or in the Appropriate Legal
     Notices displayed by works containing it; or
 
-    c) Prohibiting misrepresentation of the origin of that material, or
-    requiring that modified versions of such material be marked in
+    c) Prohibiting misrepresentation of the origin of that material,
+    or requiring that modified versions of such material be marked in
     reasonable ways as different from the original version; or
 
     d) Limiting the use for publicity purposes of names of licensors or
@@ -647,7 +647,7 @@ the "copyright" line and a pointer to where the full notice is found.
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-Also add information on how to contact you by electronic and paper mail.
+  Also add information on how to contact you by electronic and paper mail.
 
   If the program does terminal interaction, make it output a short
 notice like this when it starts in an interactive mode:
@@ -657,7 +657,7 @@ notice like this when it starts in an interactive mode:
     This is free software, and you are welcome to redistribute it
     under certain conditions; type `show c' for details.
 
-The hypothetical commands `show w' and `show c' should show the appropriate
+  The hypothetical commands `show w' and `show c' should show the appropriate
 parts of the General Public License.  Of course, your program's commands
 might be different; for a GUI interface, you would use an "about box".
 
