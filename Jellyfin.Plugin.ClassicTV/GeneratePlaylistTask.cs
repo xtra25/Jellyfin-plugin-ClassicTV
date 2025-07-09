@@ -7,6 +7,7 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Playlists;
 using MediaBrowser.Model.Tasks;
+using MediaBrowser.Model.Playlists;
 using Microsoft.Extensions.Logging;
 
 
@@ -34,11 +35,12 @@ namespace Jellyfin.Plugin.ClassicTV
         public string Name => "Generar playlist ClassicTV";
         public string Description => "Mezcla episodios de series seleccionadas y crea una playlist ordenada round-robin.";
         public string Category => "ClassicTV";
-     
+
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {
-            return new[] { new TaskTriggerInfo { Type = TaskTriggerType.Manual } };
+            // Solo ejecución manual desde el panel de tareas
+            return Array.Empty<TaskTriggerInfo>();
         }
 
         public string Key => "ClassicTV_PlaylistGenerator";
@@ -57,6 +59,9 @@ namespace Jellyfin.Plugin.ClassicTV
             var episodesBySeries = fetcher.GetOrderedEpisodesBySeries(config.SeriesIds);
             var mixedEpisodes = EpisodeMixer.MixEpisodesRoundRobin(episodesBySeries);
 
+            _logger.LogInformation("Processing {0} series with total {1} episodes", episodesBySeries.Count, episodesBySeries.Values.Sum(e => e.Count));
+            _logger.LogInformation("Mixed playlist will contain {0} episodes", mixedEpisodes.Count);
+
             var user = _userManager.Users.FirstOrDefault();
             if (user == null || mixedEpisodes.Count == 0)
             {
@@ -64,10 +69,15 @@ namespace Jellyfin.Plugin.ClassicTV
                 return;
             }
 
-            await _playlistManager.CreatePlaylistAsync(user, "ClassicTV Playlist", mixedEpisodes.Cast<BaseItem>().ToList());
+            var request = new PlaylistCreationRequest
+            {
+                Name = "ClassicTV Playlist",
+                UserId = user.Id,
+                ItemIdList = mixedEpisodes.Select(e => e.Id).ToList()
+            };
+
+            await _playlistManager.CreatePlaylist(request);
             _logger.LogInformation("Playlist created with {0} episodes", mixedEpisodes.Count);
-
-
         }
 
 

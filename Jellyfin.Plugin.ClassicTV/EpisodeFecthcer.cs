@@ -29,7 +29,7 @@ namespace Jellyfin.Plugin.ClassicTV
                 {
                     var episodes = series.GetRecursiveChildren()
                         .OfType<Episode>()
-                        .OrderBy(e => e.SeasonNumber ?? 0)
+                        .OrderBy(e => e.ParentIndexNumber ?? 0)
                         .ThenBy(e => e.IndexNumber ?? 0)
                         .ToList();
 
