@@ -93,7 +93,7 @@ El plugin mezcla episodios usando un algoritmo **round-robin**:
 
 1. **Clonar el repositorio**
    ```bash
-   git clone https://github.com/tu-usuario/jellyfin-plugin-ClassicTV.git
+   git clone https://github.com/xtra25/Jellyfin-plugin-ClassicTV
    cd jellyfin-plugin-ClassicTV
    ```
 
@@ -174,7 +174,7 @@ Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](L
 Si tienes problemas o preguntas:
 
 1. Revisa la sección de [Solución de problemas](#solución-de-problemas)
-2. Busca en los [Issues](https://github.com/tu-usuario/jellyfin-plugin-ClassicTV/issues)
+2. Busca en los [Issues](https://github.com/xtra25/Jellyfin-plugin-ClassicTV/issues)
 3. Crea un nuevo issue con:
    - Versión de Jellyfin
    - Sistema operativo
