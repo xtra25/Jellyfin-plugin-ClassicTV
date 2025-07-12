@@ -17,6 +17,13 @@
                         </select>
                         <div class="fieldDescription">Selecciona varias series manteniendo pulsado Ctrl o Shift.</div>
                     </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="UserSelector">Selecciona los usuarios para crear playlists</label>
+                        <select id="UserSelector" name="UserSelector" multiple size="5" class="emby-input">
+                            <option value="">Cargando usuarios...</option>
+                        </select>
+                        <div class="fieldDescription">Selecciona varios usuarios manteniendo pulsado Ctrl o Shift. Si no seleccionas ninguno, no se crearán playlists.</div>
+                    </div>
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block emby-button">
                             <span>Guardar</span>
@@ -84,15 +91,63 @@
                 });
             }
 
+            function loadUsers() {
+                console.log('ClassicTV: Loading users...');
+
+                // Obtener la configuración actual para los usuarios
+                ApiClient.getPluginConfiguration(ClassicTVConfig.pluginUniqueId).then(function (config) {
+                    console.log('ClassicTV: Got plugin config for users:', config);
+
+                    // Obtener todos los usuarios
+                    ApiClient.getUsers().then(function (users) {
+                        console.log('ClassicTV: Got users result:', users);
+
+                        var selector = document.querySelector('#UserSelector');
+                        selector.innerHTML = '';
+
+                        if (users && users.length > 0) {
+                            users.forEach(function (user) {
+                                var option = document.createElement('option');
+                                option.value = user.Id;
+                                option.textContent = user.Name;
+                                if (config.UserIds && config.UserIds.indexOf(user.Id) !== -1) {
+                                    option.selected = true;
+                                }
+                                selector.appendChild(option);
+                            });
+                            console.log('ClassicTV: Loaded ' + users.length + ' users');
+                        } else {
+                            var option = document.createElement('option');
+                            option.value = "";
+                            option.textContent = "No se encontraron usuarios";
+                            option.disabled = true;
+                            selector.appendChild(option);
+                            console.log('ClassicTV: No users found');
+                        }
+                    }).catch(function(error) {
+                        console.error('ClassicTV: Error getting users:', error);
+                        var selector = document.querySelector('#UserSelector');
+                        selector.innerHTML = '<option value="">Error al cargar usuarios</option>';
+                    });
+                }).catch(function(error) {
+                    console.error('ClassicTV: Error getting plugin config for users:', error);
+                });
+            }
+
             function saveConfig() {
                 console.log('ClassicTV: Saving configuration...');
                 Dashboard.showLoadingMsg();
 
                 ApiClient.getPluginConfiguration(ClassicTVConfig.pluginUniqueId).then(function (config) {
-                    var selected = Array.from(document.querySelector('#SeriesSelector').selectedOptions).map(function(opt){
+                    var selectedSeries = Array.from(document.querySelector('#SeriesSelector').selectedOptions).map(function(opt){
                         return opt.value;
                     });
-                    config.SeriesIds = selected;
+                    var selectedUsers = Array.from(document.querySelector('#UserSelector').selectedOptions).map(function(opt){
+                        return opt.value;
+                    });
+                    
+                    config.SeriesIds = selectedSeries;
+                    config.UserIds = selectedUsers;
 
                     console.log('ClassicTV: Saving config:', config);
 
@@ -109,16 +164,21 @@
                 });
             }
 
-            // Cargar series cuando se carga la página
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log('ClassicTV: DOM loaded, loading series...');
+            function loadAllData() {
                 loadSeries();
+                loadUsers();
+            }
+
+            // Cargar datos cuando se carga la página
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('ClassicTV: DOM loaded, loading data...');
+                loadAllData();
             });
 
             // También intentar cargar cuando la página se muestra
             document.querySelector('#configPage').addEventListener('pageshow', function() {
-                console.log('ClassicTV: Page show event, loading series...');
-                loadSeries();
+                console.log('ClassicTV: Page show event, loading data...');
+                loadAllData();
             });
 
             // Manejar el envío del formulario

@@ -8,7 +8,7 @@ Un plugin para Jellyfin que permite mezclar episodios de múltiples series selec
 - ✅ **Algoritmo round-robin**: Mezcla episodios alternando entre series
 - ✅ **Respeto al orden interno**: Mantiene el orden cronológico de cada serie
 - ✅ **Filtrado por usuario**: Solo incluye episodios no vistos por cada usuario
-- ✅ **Playlists personalizadas**: Crea una playlist única para cada usuario
+- ✅ **Playlists personalizadas y sobrescritura**: Crea una playlist única para cada usuario y la sobrescribe si ya existe (no se crean duplicados)
 - ✅ **Tarea programada**: Genera playlists automáticamente o manualmente
 
 ## Instalación
@@ -86,6 +86,7 @@ El plugin mezcla episodios usando un algoritmo **round-robin**:
 - **Solo episodios no vistos**: No incluye episodios ya vistos
 - **Límite de 1000 episodios**: Para evitar problemas de rendimiento
 - **Orden round-robin**: Mantiene el equilibrio entre series
+- **Sobrescribe playlists existentes**: Si ya existe una playlist con el mismo nombre para el usuario, se elimina y se crea una nueva (no se acumulan duplicados)
 
 ## Desarrollo
 
@@ -143,6 +144,7 @@ Jellyfin.Plugin.ClassicTV/
 - Revisa los logs de Jellyfin para errores específicos
 
 ### La playlist no se actualiza
+- Si ves varias playlists con el mismo nombre, actualiza el plugin: ahora la playlist se sobrescribe correctamente y no se crean duplicados
 - Ejecuta manualmente la tarea "Generar playlist ClassicTV"
 - Verifica que las series seleccionadas no hayan cambiado
 - Comprueba que haya episodios no vistos disponibles

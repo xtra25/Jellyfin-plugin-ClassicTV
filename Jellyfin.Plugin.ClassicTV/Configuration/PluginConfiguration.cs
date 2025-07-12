@@ -15,10 +15,16 @@ public class PluginConfiguration : BasePluginConfiguration
     public PluginConfiguration()
     {
         SeriesIds = new List<string>();
+        UserIds = new List<string>();
     }
 
     /// <summary>
     /// Gets or sets the list of selected series IDs.
     /// </summary>
     public List<string> SeriesIds { get; set; }
+
+    /// <summary>
+    /// Gets or sets the list of selected user IDs.
+    /// </summary>
+    public List<string> UserIds { get; set; }
 }
