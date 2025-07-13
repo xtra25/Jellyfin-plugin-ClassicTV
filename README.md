@@ -1,188 +1,188 @@
-# ClassicTV Plugin para Jellyfin
+# ClassicTV Plugin for Jellyfin
 
-Un plugin para Jellyfin que permite mezclar episodios de múltiples series seleccionadas en una playlist ordenada, manteniendo el orden interno de cada serie usando un algoritmo round-robin.
+A Jellyfin plugin that allows mixing episodes from multiple selected series into an ordered playlist, maintaining the internal order of each series using a round-robin algorithm.
 
-## Características
+## Features
 
-- ✅ **Selección múltiple de series**: Elige varias series desde la interfaz de configuración
-- ✅ **Algoritmo round-robin**: Mezcla episodios alternando entre series
-- ✅ **Respeto al orden interno**: Mantiene el orden cronológico de cada serie
-- ✅ **Filtrado por usuario**: Solo incluye episodios no vistos por cada usuario
-- ✅ **Playlists personalizadas y sobrescritura**: Crea una playlist única para cada usuario y la sobrescribe si ya existe (no se crean duplicados)
-- ✅ **Tarea programada**: Genera playlists automáticamente o manualmente
+- ✅ **Multiple series selection**: Choose several series from the configuration interface
+- ✅ **Round-robin algorithm**: Mixes episodes alternating between series
+- ✅ **Respect internal order**: Maintains the chronological order of each series
+- ✅ **User filtering**: Only includes episodes not watched by each user
+- ✅ **Custom playlists and overwriting**: Creates a unique playlist for each user and overwrites it if it already exists (no duplicates are created)
+- ✅ **Scheduled task**: Generates playlists automatically or manually
 
-## Instalación
+## Installation
 
-### Requisitos
-- Jellyfin Server 10.9.0 o superior
+### Requirements
+- Jellyfin Server 10.9.0 or higher
 - .NET 8.0 Runtime
 
-### Pasos de instalación
+### Installation steps
 
-1. **Descargar el plugin**
-   - Descarga el archivo `Jellyfin.Plugin.ClassicTV.dll` de la sección de releases
-   - O compila desde el código fuente (ver sección de desarrollo)
+1. **Download the plugin**
+   - Download the `Jellyfin.Plugin.ClassicTV.dll` file from the releases section
+   - Or compile from source code (see development section)
 
-2. **Instalar en Jellyfin**
-   - Detén el servidor Jellyfin
-   - Copia el archivo `Jellyfin.Plugin.ClassicTV.dll` a la carpeta de plugins:
+2. **Install in Jellyfin**
+   - Stop the Jellyfin server
+   - Copy the `Jellyfin.Plugin.ClassicTV.dll` file to the plugins folder:
      - **Windows**: `%PROGRAMDATA%\Jellyfin\Server\plugins`
      - **Linux**: `/var/lib/jellyfin/plugins`
-     - **Docker**: Monta la carpeta de plugins en el contenedor
-   - Reinicia el servidor Jellyfin
+     - **Docker**: Mount the plugins folder in the container
+   - Restart the Jellyfin server
 
-3. **Verificar la instalación**
-   - Ve a **Dashboard** → **Plugins**
-   - Busca "ClassicTV" en la lista de plugins instalados
-   - El plugin debería aparecer como "ClassicTV" en la categoría "General"
+3. **Verify installation**
+   - Go to **Dashboard** → **Plugins**
+   - Look for "ClassicTV" in the list of installed plugins
+   - The plugin should appear as "ClassicTV" in the "General" category
 
-## Configuración
+## Configuration
 
-### Configurar series seleccionadas
+### Configure selected series
 
-1. **Acceder a la configuración**
-   - Ve a **Dashboard** → **Plugins**
-   - Busca "ClassicTV" y haz clic en **Ajustes**
+1. **Access configuration**
+   - Go to **Dashboard** → **Plugins**
+   - Find "ClassicTV" and click **Settings**
 
-2. **Seleccionar series**
-   - En la página de configuración, verás un selector múltiple con todas tus series
-   - Mantén pulsado **Ctrl** (Windows) o **Cmd** (Mac) para seleccionar múltiples series
-   - También puedes usar **Shift** para seleccionar rangos
-   - Haz clic en **Guardar** para confirmar la selección
+2. **Select series**
+   - On the configuration page, you'll see a multiple selector with all your series
+   - Hold **Ctrl** (Windows) or **Cmd** (Mac) to select multiple series
+   - You can also use **Shift** to select ranges
+   - Click **Save** to confirm the selection
 
-### Generar playlist
+### Generate playlist
 
-1. **Ejecutar la tarea manualmente**
-   - Ve a **Dashboard** → **Tareas programadas**
-   - Busca "Generar playlist ClassicTV"
-   - Haz clic en **Ejecutar ahora**
+1. **Run the task manually**
+   - Go to **Dashboard** → **Scheduled Tasks**
+   - Find "Generate ClassicTV Playlist"
+   - Click **Run Now**
 
-2. **Verificar la playlist**
-   - Ve a **Mi biblioteca** → **Playlists**
-   - Busca la playlist "ClassicTV Playlist - [TuUsuario]"
-   - La playlist contendrá episodios mezclados de las series seleccionadas
+2. **Verify the playlist**
+   - Go to **My Library** → **Playlists**
+   - Look for the playlist "ClassicTV Playlist - [YourUser]"
+   - The playlist will contain mixed episodes from the selected series
 
-## Uso
+## Usage
 
-### Cómo funciona el algoritmo
+### How the algorithm works
 
-El plugin mezcla episodios usando un algoritmo **round-robin**:
+The plugin mixes episodes using a **round-robin** algorithm:
 
-1. **Ordena episodios**: Cada serie mantiene su orden cronológico interno
-2. **Filtra no vistos**: Solo incluye episodios que el usuario no ha visto
-3. **Mezcla alternando**: Toma un episodio de cada serie en rotación
-4. **Ejemplo**:
+1. **Sort episodes**: Each series maintains its internal chronological order
+2. **Filter unwatched**: Only includes episodes that the user hasn't watched
+3. **Alternating mix**: Takes one episode from each series in rotation
+4. **Example**:
    ```
-   Serie A: Ep1, Ep2, Ep3, Ep4
-   Serie B: Ep1, Ep2
-   Serie C: Ep1, Ep2, Ep3
+   Series A: Ep1, Ep2, Ep3, Ep4
+   Series B: Ep1, Ep2
+   Series C: Ep1, Ep2, Ep3
 
-   Resultado: A1, B1, C1, A2, B2, C2, A3, C3, A4
+   Result: A1, B1, C1, A2, B2, C2, A3, C3, A4
    ```
 
-### Características de la playlist
+### Playlist features
 
-- **Personalizada por usuario**: Cada usuario tiene su propia playlist
-- **Solo episodios no vistos**: No incluye episodios ya vistos
-- **Límite de 1000 episodios**: Para evitar problemas de rendimiento
-- **Orden round-robin**: Mantiene el equilibrio entre series
-- **Sobrescribe playlists existentes**: Si ya existe una playlist con el mismo nombre para el usuario, se elimina y se crea una nueva (no se acumulan duplicados)
+- **User-specific**: Each user has their own playlist
+- **Unwatched episodes only**: Doesn't include already watched episodes
+- **1000 episode limit**: To avoid performance issues
+- **Round-robin order**: Maintains balance between series
+- **Overwrites existing playlists**: If a playlist with the same name already exists for the user, it's deleted and a new one is created (no duplicates accumulate)
 
-## Desarrollo
+## Development
 
-### Compilar desde el código fuente
+### Compile from source code
 
-1. **Clonar el repositorio**
+1. **Clone the repository**
    ```bash
    git clone https://github.com/xtra25/Jellyfin-plugin-ClassicTV
    cd jellyfin-plugin-ClassicTV
    ```
 
-2. **Requisitos de desarrollo**
+2. **Development requirements**
    - .NET 8.0 SDK
-   - Visual Studio 2022 o VS Code
+   - Visual Studio 2022 or VS Code
 
-3. **Compilar**
+3. **Compile**
    ```bash
    cd Jellyfin.Plugin.ClassicTV
    dotnet build
    ```
 
-4. **Instalar**
-   - El archivo DLL se genera en `bin/Debug/net8.0/`
-   - Copia `Jellyfin.Plugin.ClassicTV.dll` a la carpeta de plugins de Jellyfin
+4. **Install**
+   - The DLL file is generated in `bin/Debug/net8.0/`
+   - Copy `Jellyfin.Plugin.ClassicTV.dll` to Jellyfin's plugins folder
 
-### Estructura del proyecto
+### Project structure
 
 ```
 Jellyfin.Plugin.ClassicTV/
-├── Plugin.cs                    # Clase principal del plugin
+├── Plugin.cs                    # Main plugin class
 ├── Configuration/
-│   ├── PluginConfiguration.cs   # Configuración del plugin
-│   └── configPage.html         # Página de configuración web
-├── EpisodeFetcher.cs           # Obtiene episodios de las series
-├── EpisodeMixer.cs             # Algoritmo de mezcla round-robin
-├── GeneratePlaylistTask.cs     # Tarea programada para generar playlists
+│   ├── PluginConfiguration.cs   # Plugin configuration
+│   └── configPage.html         # Web configuration page
+├── EpisodeFetcher.cs           # Gets episodes from series
+├── EpisodeMixer.cs             # Round-robin mixing algorithm
+├── GeneratePlaylistTask.cs     # Scheduled task to generate playlists
 └── Jellyfin.Plugin.ClassicTV.csproj
 ```
 
-## Solución de problemas
+## Troubleshooting
 
-### La página de configuración no aparece
-- Verifica que el plugin esté instalado correctamente
-- Revisa los logs de Jellyfin para errores
-- Asegúrate de que el archivo DLL esté en la carpeta correcta
+### Configuration page doesn't appear
+- Verify that the plugin is installed correctly
+- Check Jellyfin logs for errors
+- Make sure the DLL file is in the correct folder
 
-### La playlist solo tiene pocos episodios
-- Verifica que las series seleccionadas tengan episodios no vistos
-- Comprueba que los episodios no estén marcados como vistos
-- Revisa los logs para ver cuántos episodios se encontraron
+### Playlist only has few episodes
+- Verify that selected series have unwatched episodes
+- Check that episodes aren't marked as watched
+- Review logs to see how many episodes were found
 
-### Error al generar la playlist
-- Verifica que las series seleccionadas existan en tu biblioteca
-- Comprueba que tengas permisos para crear playlists
-- Revisa los logs de Jellyfin para errores específicos
+### Error generating playlist
+- Verify that selected series exist in your library
+- Check that you have permissions to create playlists
+- Review Jellyfin logs for specific errors
 
-### La playlist no se actualiza
-- Si ves varias playlists con el mismo nombre, actualiza el plugin: ahora la playlist se sobrescribe correctamente y no se crean duplicados
-- Ejecuta manualmente la tarea "Generar playlist ClassicTV"
-- Verifica que las series seleccionadas no hayan cambiado
-- Comprueba que haya episodios no vistos disponibles
+### Playlist doesn't update
+- If you see multiple playlists with the same name, update the plugin: now the playlist is overwritten correctly and no duplicates are created
+- Manually run the "Generate ClassicTV Playlist" task
+- Verify that selected series haven't changed
+- Check that unwatched episodes are available
 
 ## Logs
 
-Para diagnosticar problemas, revisa los logs de Jellyfin. El plugin registra información detallada sobre:
+To diagnose problems, check Jellyfin logs. The plugin logs detailed information about:
 
-- Series seleccionadas
-- Episodios encontrados por serie
-- Episodios no vistos por usuario
-- Proceso de mezcla round-robin
-- Creación de playlists
+- Selected series
+- Episodes found per series
+- Unwatched episodes per user
+- Round-robin mixing process
+- Playlist creation
 
-## Contribuir
+## Contributing
 
-1. Fork el repositorio
-2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit tus cambios (`git commit -am 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Crea un Pull Request
+1. Fork the repository
+2. Create a branch for your feature (`git checkout -b feature/new-functionality`)
+3. Commit your changes (`git commit -am 'Add new functionality'`)
+4. Push to the branch (`git push origin feature/new-functionality`)
+5. Create a Pull Request
 
-## Licencia
+## License
 
-Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Soporte
+## Support
 
-Si tienes problemas o preguntas:
+If you have problems or questions:
 
-1. Revisa la sección de [Solución de problemas](#solución-de-problemas)
-2. Busca en los [Issues](https://github.com/xtra25/Jellyfin-plugin-ClassicTV/issues)
-3. Crea un nuevo issue con:
-   - Versión de Jellyfin
-   - Sistema operativo
-   - Logs relevantes
-   - Descripción detallada del problema
+1. Check the [Troubleshooting](#troubleshooting) section
+2. Search in [Issues](https://github.com/xtra25/Jellyfin-plugin-ClassicTV/issues)
+3. Create a new issue with:
+   - Jellyfin version
+   - Operating system
+   - Relevant logs
+   - Detailed problem description
 
 ---
 
-**¡Disfruta de tu experiencia de TV clásica mezclada!** 📺✨
+**Enjoy your mixed classic TV experience!** 📺✨
