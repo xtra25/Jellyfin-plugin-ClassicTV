@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using MediaBrowser.Controller.Entities.TV;
@@ -15,9 +16,16 @@ namespace Jellyfin.Plugin.ClassicTV
         {
             const int maxEpisodes = 1000; // Límite máximo de episodios
             var result = new List<Episode>();
+            var random = new Random(Guid.NewGuid().GetHashCode());
 
             // Crear listas de episodios para cada serie
-            var episodeLists = seriesEpisodes.Values.ToList();
+            var episodeLists = seriesEpisodes.Values
+                .Select(list => list != null ? new List<Episode>(list) : new List<Episode>())
+                .ToList();
+
+            // Reordenar aleatoriamente el orden de las series para obtener una mezcla distinta cada ejecución
+            Shuffle(episodeLists, random);
+
             var currentIndexes = new int[episodeLists.Count]; // Índices actuales para cada serie
 
             bool hasMoreEpisodes;
@@ -43,6 +51,15 @@ namespace Jellyfin.Plugin.ClassicTV
             } while (hasMoreEpisodes && result.Count < maxEpisodes);
 
             return result;
+        }
+
+        private static void Shuffle<T>(IList<T> list, Random random)
+        {
+            for (int i = list.Count - 1; i > 0; i--)
+            {
+                int j = random.Next(i + 1);
+                (list[i], list[j]) = (list[j], list[i]);
+            }
         }
     }
 }
