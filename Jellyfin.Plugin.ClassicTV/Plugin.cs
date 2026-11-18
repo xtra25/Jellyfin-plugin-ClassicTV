@@ -30,6 +30,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         _logger.LogInformation("ClassicTV Plugin constructor called");
         Instance = this;
         _logger.LogInformation("ClassicTV Plugin instance set");
+        MigrateLegacyConfiguration();
     }
 
     /// <inheritdoc />
@@ -42,6 +43,34 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// Gets the current plugin instance.
     /// </summary>
     public static Plugin? Instance { get; private set; }
+
+    /// <summary>
+    /// Converts the old configuration (one list of series shared by a list of users) into one playlist per user.
+    /// The migrated playlists keep the default name, so the playlists that already exist are updated instead of duplicated.
+    /// </summary>
+    internal void MigrateLegacyConfiguration()
+    {
+        try
+        {
+            var config = Configuration;
+            if (config.Playlists.Count > 0 || config.SeriesIds.Count == 0 || config.UserIds.Count == 0)
+            {
+                return;
+            }
+
+            var migrated = PlaylistRules.FromLegacy(config.UserIds, config.SeriesIds);
+            config.Playlists.AddRange(migrated);
+            config.SeriesIds.Clear();
+            config.UserIds.Clear();
+            SaveConfiguration();
+
+            _logger.LogInformation("ClassicTV: migrated the old configuration to {PlaylistCount} playlist(s)", migrated.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ClassicTV: could not migrate the old configuration");
+        }
+    }
 
     /// <inheritdoc />
     public IEnumerable<PluginPageInfo> GetPages()

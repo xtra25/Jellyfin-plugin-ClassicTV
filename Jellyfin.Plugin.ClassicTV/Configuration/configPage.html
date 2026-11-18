@@ -5,189 +5,791 @@
     <meta charset="utf-8" />
 </head>
 <body>
-    <div id="configPage" data-role="page" class="page type-interior pluginConfigurationPage">
+    <div id="classicTVConfigPage" data-role="page" class="page type-interior pluginConfigurationPage">
         <div data-role="content">
-            <div class="content-primary">
-                <h2>Configuración ClassicTV</h2>
-                <form id="configForm">
-                    <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="SeriesSelector">Selecciona las series para mezclar</label>
-                        <select id="SeriesSelector" name="SeriesSelector" multiple size="10" class="emby-input">
-                            <option value="">Cargando series...</option>
-                        </select>
-                        <div class="fieldDescription">Selecciona varias series manteniendo pulsado Ctrl o Shift.</div>
-                    </div>
-                    <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="UserSelector">Selecciona los usuarios para crear playlists</label>
-                        <select id="UserSelector" name="UserSelector" multiple size="5" class="emby-input">
-                            <option value="">Cargando usuarios...</option>
-                        </select>
-                        <div class="fieldDescription">Selecciona varios usuarios manteniendo pulsado Ctrl o Shift. Si no seleccionas ninguno, no se crearán playlists.</div>
-                    </div>
-                    <div>
-                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
-                            <span>Guardar</span>
-                        </button>
-                    </div>
-                </form>
+            <div class="content-primary ctv">
+                <style>
+                    .ctv { --ctv-accent: var(--theme-primary-color, #00a4dc); --ctv-line: rgba(128, 128, 128, .45); --ctv-soft: rgba(128, 128, 128, .14); }
+                    .ctv * { box-sizing: border-box; }
+                    .ctv-intro { margin: 0 0 1em; opacity: .85; line-height: 1.4; }
+                    .ctv-card { border: 1px solid var(--ctv-line); border-radius: 8px; background: var(--ctv-soft); padding: 1em; margin: 0 0 1.2em; }
+                    .ctv-head { display: flex; flex-wrap: wrap; gap: .8em; align-items: flex-end; }
+                    .ctv-field { display: flex; flex-direction: column; gap: .3em; flex: 1 1 14em; min-width: 0; font-size: .9em; }
+                    .ctv-field > span { opacity: .8; }
+                    .ctv input[type="text"], .ctv select { width: 100%; font: inherit; color: inherit; background: var(--ctv-soft); border: 1px solid var(--ctv-line); border-radius: 4px; padding: .55em .7em; }
+                    .ctv select option { background: #262626; color: #fff; }
+                    .ctv input[type="text"]:focus, .ctv select:focus, .ctv-btn:focus-visible { outline: 2px solid var(--ctv-accent); outline-offset: 1px; }
+                    .ctv-btn { font: inherit; color: inherit; cursor: pointer; background: var(--ctv-soft); border: 1px solid var(--ctv-line); border-radius: 4px; padding: .55em 1em; white-space: nowrap; }
+                    .ctv-btn:hover { border-color: var(--ctv-accent); }
+                    .ctv-btn:disabled { opacity: .45; cursor: default; border-color: var(--ctv-line); }
+                    .ctv-primary { background: var(--ctv-accent); border-color: var(--ctv-accent); color: #fff; font-weight: 600; }
+                    .ctv-danger:hover { border-color: #e5484d; color: #e5484d; }
+                    .ctv-meta { margin: .9em 0 .4em; font-size: .9em; }
+                    .ctv-count { font-weight: 600; }
+                    .ctv-msg { margin: .2em 0 0; }
+                    .ctv-msg.warn { color: #f5a623; }
+                    .ctv-msg.err { color: #e5484d; }
+                    .ctv-tools { display: flex; flex-wrap: wrap; gap: .6em; align-items: center; margin: .6em 0; }
+                    .ctv-tools input[type="text"] { flex: 1 1 14em; width: auto; }
+                    .ctv-check { display: inline-flex; gap: .4em; align-items: center; cursor: pointer; }
+                    .ctv input[type="checkbox"] { accent-color: var(--ctv-accent); width: 1.1em; height: 1.1em; margin: 0; }
+                    .ctv-series { max-height: 18em; overflow-y: auto; border: 1px solid var(--ctv-line); border-radius: 4px; padding: .3em .5em; columns: 16em auto; column-gap: 1em; }
+                    .ctv-item { display: flex; gap: .5em; align-items: center; padding: .25em 0; cursor: pointer; break-inside: avoid; }
+                    .ctv-item[hidden] { display: none; }
+                    .ctv-item span { overflow: hidden; text-overflow: ellipsis; }
+                    .ctv-copy { display: flex; flex-wrap: wrap; gap: .6em; align-items: center; margin-top: .8em; padding-top: .8em; border-top: 1px dashed var(--ctv-line); }
+                    .ctv-copy select { flex: 1 1 14em; width: auto; }
+                    .ctv-actions { display: flex; flex-wrap: wrap; gap: .8em; margin: 1em 0; }
+                    .ctv-status { margin: .8em 0; min-height: 1.4em; font-weight: 600; }
+                    .ctv-status.ok { color: #46d369; }
+                    .ctv-status.err { color: #e5484d; }
+                    .ctv-empty { opacity: .8; padding: 1em 0; }
+                </style>
+
+                <h2 data-i18n="title">ClassicTV configuration</h2>
+                <p class="ctv-intro" data-i18n="intro"></p>
+
+                <div class="ctv-actions">
+                    <button type="button" class="ctv-btn js-add" data-i18n="add"></button>
+                    <button type="button" class="ctv-btn ctv-primary js-save" data-i18n="save"></button>
+                    <button type="button" class="ctv-btn js-save-run" data-i18n="saveRun"></button>
+                    <button type="button" class="ctv-btn js-discard" data-i18n="discard"></button>
+                </div>
+
+                <div id="ctvStatus" class="ctv-status" role="status" aria-live="polite"></div>
+                <div id="ctvPlaylists"></div>
+
+                <div class="ctv-actions">
+                    <button type="button" class="ctv-btn js-add" data-i18n="add"></button>
+                    <button type="button" class="ctv-btn ctv-primary js-save" data-i18n="save"></button>
+                </div>
             </div>
         </div>
+
         <script type="text/javascript">
-            var ClassicTVConfig = {
-                pluginUniqueId: 'eb5d7894-8eef-4b36-aa6f-5d124e828ce1'
-            };
+            (function () {
+                'use strict';
 
-            function loadSeries() {
-                console.log('ClassicTV: Loading series...');
-                Dashboard.showLoadingMsg();
+                var PLUGIN_ID = 'eb5d7894-8eef-4b36-aa6f-5d124e828ce1';
+                var TASK_KEY = 'ClassicTV_PlaylistGenerator';
+                // Debe coincidir con PlaylistRules.DefaultNamePrefix (C#): es el nombre por defecto que el servidor da a las listas migradas. No se traduce.
+                var DEFAULT_PREFIX = 'ClassicTV Playlist - ';
 
-                // Primero obtener la configuración actual
-                ApiClient.getPluginConfiguration(ClassicTVConfig.pluginUniqueId).then(function (config) {
-                    console.log('ClassicTV: Got plugin config:', config);
+                var page = document.getElementById('classicTVConfigPage');
+                var listEl = page.querySelector('#ctvPlaylists');
+                var statusEl = page.querySelector('#ctvStatus');
 
-                    // Luego obtener todas las series
-                    ApiClient.getItems(null, {
-                        IncludeItemTypes: 'Series',
-                        Recursive: true,
-                        Fields: 'Id,Name',
-                        SortBy: 'Name',
-                        SortOrder: 'Ascending'
+                var state = { playlists: [], series: [], seriesById: {}, users: [], usersById: {}, seriesOk: false, dirty: false };
+                var views = {};
+
+                // ---------- Idiomas (en / es / ca) ----------
+                // Debe ser JSON válido (se comprueba en las pruebas) y cada idioma debe tener las mismas claves y marcadores {x}.
+                var TEXTS = {
+                    "en": {
+                        "title": "ClassicTV configuration",
+                        "intro": "Each playlist has a name, an owner user and its own selection of series. The ClassicTV scheduled task creates or updates all of them, using only the episodes that user hasn't watched yet.",
+                        "add": "+ Add playlist",
+                        "save": "Save",
+                        "saveRun": "Save and generate now",
+                        "discard": "Discard changes",
+                        "name": "Name",
+                        "user": "User",
+                        "namePlaceholder": "Playlist name",
+                        "ownerUser": "Owner user",
+                        "remove": "Remove playlist",
+                        "selectedCount": "{n} of {total} series selected",
+                        "searchPlaceholder": "Search series…",
+                        "searchAria": "Search series",
+                        "onlySelected": "Selected only",
+                        "markVisible": "Select visible",
+                        "clearAll": "Clear all",
+                        "noSeriesInLibrary": "No series found in the library.",
+                        "copyFrom": "Copy series from",
+                        "copyChoose": "Choose a playlist…",
+                        "copyAria": "Copy the series from another playlist",
+                        "copyOption_one": "{name} — {owner} (1 series)",
+                        "copyOption_other": "{name} — {owner} ({n} series)",
+                        "unknownUserOwner": "unknown user",
+                        "noName": "(no name)",
+                        "noNameShort": "no name",
+                        "replace": "Replace",
+                        "addSeries": "Add",
+                        "unknownUserOption": "(unknown user)",
+                        "errNoUser": "Choose a user.",
+                        "warnUserGone": "This playlist's user no longer exists; it will be skipped when generating.",
+                        "errNoName": "Enter a name for the playlist.",
+                        "errDuplicate": "This user already has another playlist with the same name.",
+                        "warnNoSeries": "No series selected: this playlist will be skipped when generating.",
+                        "warnMissing_one": "{n} selected series no longer exists in the library and will be removed when saving.",
+                        "warnMissing_other": "{n} selected series no longer exist in the library and will be removed when saving.",
+                        "confirmRemove": "Remove the playlist “{name}” from the configuration?\n\nA playlist that already exists in Jellyfin is not deleted; it just stops being updated.",
+                        "emptyHint": "There are no playlists yet. Click “Add playlist” to create the first one.",
+                        "statusPickSource": "First choose the playlist you want to copy the series from.",
+                        "statusReplaced": "The series of “{target}” were replaced with those of “{source}” ({n}). Not saved yet.",
+                        "statusAdded": "The series of “{source}” were added to “{target}” ({n}). Not saved yet.",
+                        "statusPlaylistAdded": "Playlist added. Give it a name, choose the user and tick the series. Not saved yet.",
+                        "statusNoUsers": "The users could not be loaded; reload the page.",
+                        "errSeriesNotLoaded": "The library's series could not be loaded; nothing is saved so your selections are not lost. Reload the page.",
+                        "errPlaylistPrefix": "“{name}”: {message}",
+                        "savedOk": "Configuration saved.",
+                        "savedRun": "Configuration saved and generation started. You can follow the progress in Dashboard → Scheduled Tasks.",
+                        "savedRunFailed": "Configuration saved, but the task could not be started. Run it from Dashboard → Scheduled Tasks.",
+                        "saveFailed": "The configuration could not be saved (see the browser console and the Jellyfin logs).",
+                        "loadSeriesFailed": "The library's series could not be loaded.",
+                        "loadFailed": "The configuration could not be loaded.",
+                        "confirmDiscard": "Changes you haven't saved will be lost. Continue?"
+                    },
+                    "es": {
+                        "title": "Configuración de ClassicTV",
+                        "intro": "Cada lista de reproducción tiene un nombre, un usuario propietario y su propia selección de series. La tarea programada de ClassicTV las crea o actualiza todas, usando solo los episodios que ese usuario aún no ha visto.",
+                        "add": "+ Añadir lista",
+                        "save": "Guardar",
+                        "saveRun": "Guardar y generar ahora",
+                        "discard": "Descartar cambios",
+                        "name": "Nombre",
+                        "user": "Usuario",
+                        "namePlaceholder": "Nombre de la lista de reproducción",
+                        "ownerUser": "Usuario propietario",
+                        "remove": "Eliminar lista",
+                        "selectedCount": "{n} de {total} series seleccionadas",
+                        "searchPlaceholder": "Buscar serie…",
+                        "searchAria": "Buscar serie",
+                        "onlySelected": "Solo seleccionadas",
+                        "markVisible": "Marcar visibles",
+                        "clearAll": "Quitar todas",
+                        "noSeriesInLibrary": "No se han encontrado series en la biblioteca.",
+                        "copyFrom": "Copiar series desde",
+                        "copyChoose": "Elegir una lista…",
+                        "copyAria": "Copiar las series de otra lista de reproducción",
+                        "copyOption_one": "{name} — {owner} (1 serie)",
+                        "copyOption_other": "{name} — {owner} ({n} series)",
+                        "unknownUserOwner": "usuario desconocido",
+                        "noName": "(sin nombre)",
+                        "noNameShort": "sin nombre",
+                        "replace": "Reemplazar",
+                        "addSeries": "Añadir",
+                        "unknownUserOption": "(usuario desconocido)",
+                        "errNoUser": "Elige un usuario.",
+                        "warnUserGone": "El usuario de esta lista ya no existe; se omitirá al generar.",
+                        "errNoName": "Escribe un nombre para la lista.",
+                        "errDuplicate": "Este usuario ya tiene otra lista con el mismo nombre.",
+                        "warnNoSeries": "Sin series seleccionadas: esta lista se omitirá al generar.",
+                        "warnMissing_one": "{n} serie seleccionada ya no existe en la biblioteca y se quitará al guardar.",
+                        "warnMissing_other": "{n} series seleccionadas ya no existen en la biblioteca y se quitarán al guardar.",
+                        "confirmRemove": "¿Quitar la lista «{name}» de la configuración?\n\nLa lista que ya exista en Jellyfin no se borra; simplemente dejará de actualizarse.",
+                        "emptyHint": "Todavía no hay ninguna lista. Pulsa «Añadir lista» para crear la primera.",
+                        "statusPickSource": "Elige primero la lista de la que quieres copiar las series.",
+                        "statusReplaced": "Las series de «{target}» se han reemplazado por las de «{source}» ({n}). Falta guardar.",
+                        "statusAdded": "Se han añadido a «{target}» las series de «{source}» ({n}). Falta guardar.",
+                        "statusPlaylistAdded": "Lista añadida. Ponle nombre, elige el usuario y marca las series. Falta guardar.",
+                        "statusNoUsers": "No se han podido cargar los usuarios; recarga la página.",
+                        "errSeriesNotLoaded": "No se han podido cargar las series de la biblioteca; no se guarda nada para no perder las selecciones. Recarga la página.",
+                        "errPlaylistPrefix": "«{name}»: {message}",
+                        "savedOk": "Configuración guardada.",
+                        "savedRun": "Configuración guardada y generación iniciada. Puedes ver el progreso en Panel de control → Tareas programadas.",
+                        "savedRunFailed": "Configuración guardada, pero no se ha podido iniciar la tarea. Ejecútala desde Panel de control → Tareas programadas.",
+                        "saveFailed": "No se ha podido guardar la configuración (mira la consola del navegador y los registros de Jellyfin).",
+                        "loadSeriesFailed": "No se han podido cargar las series de la biblioteca.",
+                        "loadFailed": "No se ha podido cargar la configuración.",
+                        "confirmDiscard": "Se perderán los cambios que no hayas guardado. ¿Continuar?"
+                    },
+                    "ca": {
+                        "title": "Configuració de ClassicTV",
+                        "intro": "Cada llista de reproducció té un nom, un usuari propietari i la seva pròpia selecció de sèries. La tasca programada de ClassicTV les crea o les actualitza totes, fent servir només els episodis que aquest usuari encara no ha vist.",
+                        "add": "+ Afegeix una llista",
+                        "save": "Desa",
+                        "saveRun": "Desa i genera ara",
+                        "discard": "Descarta els canvis",
+                        "name": "Nom",
+                        "user": "Usuari",
+                        "namePlaceholder": "Nom de la llista de reproducció",
+                        "ownerUser": "Usuari propietari",
+                        "remove": "Elimina la llista",
+                        "selectedCount": "{n} de {total} sèries seleccionades",
+                        "searchPlaceholder": "Cerca una sèrie…",
+                        "searchAria": "Cerca una sèrie",
+                        "onlySelected": "Només les seleccionades",
+                        "markVisible": "Marca les visibles",
+                        "clearAll": "Treu-les totes",
+                        "noSeriesInLibrary": "No s'ha trobat cap sèrie a la mediateca.",
+                        "copyFrom": "Copia les sèries de",
+                        "copyChoose": "Tria una llista…",
+                        "copyAria": "Copia les sèries d'una altra llista de reproducció",
+                        "copyOption_one": "{name} — {owner} (1 sèrie)",
+                        "copyOption_other": "{name} — {owner} ({n} sèries)",
+                        "unknownUserOwner": "usuari desconegut",
+                        "noName": "(sense nom)",
+                        "noNameShort": "sense nom",
+                        "replace": "Substitueix",
+                        "addSeries": "Afegeix",
+                        "unknownUserOption": "(usuari desconegut)",
+                        "errNoUser": "Tria un usuari.",
+                        "warnUserGone": "L'usuari d'aquesta llista ja no existeix; s'ometrà en generar.",
+                        "errNoName": "Escriu un nom per a la llista.",
+                        "errDuplicate": "Aquest usuari ja té una altra llista amb el mateix nom.",
+                        "warnNoSeries": "No hi ha cap sèrie seleccionada: aquesta llista s'ometrà en generar.",
+                        "warnMissing_one": "{n} sèrie seleccionada ja no existeix a la mediateca i s'eliminarà en desar.",
+                        "warnMissing_other": "{n} sèries seleccionades ja no existeixen a la mediateca i s'eliminaran en desar.",
+                        "confirmRemove": "Vols treure la llista «{name}» de la configuració?\n\nLa llista que ja existeixi a Jellyfin no s'esborra; simplement deixarà d'actualitzar-se.",
+                        "emptyHint": "Encara no hi ha cap llista. Prem «Afegeix una llista» per crear la primera.",
+                        "statusPickSource": "Tria primer la llista de la qual vols copiar les sèries.",
+                        "statusReplaced": "Les sèries de «{target}» s'han substituït per les de «{source}» ({n}). Falta desar.",
+                        "statusAdded": "S'han afegit a «{target}» les sèries de «{source}» ({n}). Falta desar.",
+                        "statusPlaylistAdded": "Llista afegida. Posa-li un nom, tria l'usuari i marca les sèries. Falta desar.",
+                        "statusNoUsers": "No s'han pogut carregar els usuaris; recarrega la pàgina.",
+                        "errSeriesNotLoaded": "No s'han pogut carregar les sèries de la mediateca; no es desa res per no perdre les seleccions. Recarrega la pàgina.",
+                        "errPlaylistPrefix": "«{name}»: {message}",
+                        "savedOk": "Configuració desada.",
+                        "savedRun": "Configuració desada i generació iniciada. Pots veure'n el progrés a Tauler de control → Tasques programades.",
+                        "savedRunFailed": "Configuració desada, però no s'ha pogut iniciar la tasca. Executa-la des de Tauler de control → Tasques programades.",
+                        "saveFailed": "No s'ha pogut desar la configuració (mira la consola del navegador i els registres de Jellyfin).",
+                        "loadSeriesFailed": "No s'han pogut carregar les sèries de la mediateca.",
+                        "loadFailed": "No s'ha pogut carregar la configuració.",
+                        "confirmDiscard": "Es perdran els canvis que no hagis desat. Vols continuar?"
+                    }
+                };
+
+                var lang = 'en';
+
+                function hasLanguage(code) {
+                    return Object.prototype.hasOwnProperty.call(TEXTS, code);
+                }
+
+                // La web de Jellyfin pone el idioma de la interfaz del usuario en <html lang>. Si no está,
+                // se usan los idiomas del navegador y, si no hay ninguno compatible, inglés.
+                function detectLanguage() {
+                    var root = document.documentElement;
+                    var declared = root.getAttribute('lang') || root.getAttribute('data-culture');
+                    if (declared) {
+                        var base = declared.toLowerCase().split(/[-_]/)[0];
+                        return hasLanguage(base) ? base : 'en';
+                    }
+                    var preferred = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language];
+                    for (var i = 0; i < preferred.length; i++) {
+                        var code = String(preferred[i] || '').toLowerCase().split(/[-_]/)[0];
+                        if (hasLanguage(code)) { return code; }
+                    }
+                    return 'en';
+                }
+
+                function t(key, params) {
+                    var template = (TEXTS[lang] && TEXTS[lang][key]) || TEXTS.en[key] || key;
+                    return template.replace(/\{(\w+)\}/g, function (match, name) {
+                        return params && Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : match;
+                    });
+                }
+
+                // Variante singular/plural: claves "<clave>_one" y "<clave>_other"; {n} se rellena solo.
+                function tn(key, n, params) {
+                    var all = { n: n };
+                    Object.keys(params || {}).forEach(function (k) { all[k] = params[k]; });
+                    return t(key + (n === 1 ? '_one' : '_other'), all);
+                }
+
+                function applyStaticTexts() {
+                    Array.prototype.forEach.call(page.querySelectorAll('[data-i18n]'), function (node) {
+                        node.textContent = t(node.getAttribute('data-i18n'));
+                    });
+                }
+
+                function refreshLanguage() {
+                    lang = detectLanguage();
+                    applyStaticTexts();
+                }
+
+                // ---------- Utilidades ----------
+                function norm(text) {
+                    return String(text == null ? '' : text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+                }
+
+                function newId() {
+                    if (window.crypto && window.crypto.randomUUID) {
+                        return window.crypto.randomUUID().replace(/-/g, '');
+                    }
+                    return 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.replace(/x/g, function () { return Math.floor(Math.random() * 16).toString(16); });
+                }
+
+                function el(tag, props, children) {
+                    var node = document.createElement(tag);
+                    Object.keys(props || {}).forEach(function (key) {
+                        if (key === 'text') { node.textContent = props[key]; }
+                        else if (key === 'className') { node.className = props[key]; }
+                        else { node.setAttribute(key, props[key]); }
+                    });
+                    (children || []).forEach(function (child) { node.appendChild(child); });
+                    return node;
+                }
+
+                function userName(id) {
+                    var user = state.usersById[id];
+                    return user ? user.Name : null;
+                }
+
+                function defaultName(userId) {
+                    return DEFAULT_PREFIX + (userName(userId) || '');
+                }
+
+                // ¿Es el nombre por defecto de ese usuario (o su variante con sufijo " (2)", " (3)"…)?
+                function isDefaultNameOf(name, userId) {
+                    var base = defaultName(userId);
+                    return name === base || new RegExp('^' + base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\(\\d+\\)$').test(name);
+                }
+
+                function uniqueName(base, userId, ignoreId) {
+                    var name = base;
+                    var n = 2;
+                    while (state.playlists.some(function (p) { return p.Id !== ignoreId && p.UserId === userId && norm(p.Name.trim()) === norm(name.trim()); })) {
+                        name = base + ' (' + n + ')';
+                        n++;
+                    }
+                    return name;
+                }
+
+                function setStatus(text, kind) {
+                    statusEl.textContent = text || '';
+                    statusEl.className = 'ctv-status' + (kind ? ' ' + kind : '');
+                }
+
+                function markDirty() {
+                    state.dirty = true;
+                }
+
+                function selectedIds(pl) {
+                    return state.series.filter(function (s) { return pl.selected[s.Id]; }).map(function (s) { return s.Id; });
+                }
+
+                function missingCount(pl) {
+                    return Object.keys(pl.selected).filter(function (id) { return !state.seriesById[id]; }).length;
+                }
+
+                function isDuplicate(pl) {
+                    return state.playlists.some(function (o) {
+                        return o !== pl && o.UserId === pl.UserId && norm(o.Name.trim()) === norm(pl.Name.trim());
+                    });
+                }
+
+                function problemsOf(pl) {
+                    var errors = [];
+                    var warnings = [];
+                    if (!pl.UserId) { errors.push(t('errNoUser')); }
+                    else if (!state.usersById[pl.UserId]) { warnings.push(t('warnUserGone')); }
+                    if (!pl.Name.trim()) { errors.push(t('errNoName')); }
+                    else if (pl.UserId && isDuplicate(pl)) { errors.push(t('errDuplicate')); }
+                    if (selectedIds(pl).length === 0) { warnings.push(t('warnNoSeries')); }
+                    var missing = missingCount(pl);
+                    if (missing > 0) { warnings.push(tn('warnMissing', missing)); }
+                    return { errors: errors, warnings: warnings };
+                }
+
+                // ---------- Estat a partir de la configuració ----------
+                function stateFromConfig(config) {
+                    var defs = (config.Playlists || []).slice();
+
+                    // Red de seguridad: si el servidor aún no ha migrado la configuración antigua, se convierte aquí.
+                    if (defs.length === 0 && (config.SeriesIds || []).length > 0) {
+                        (config.UserIds || []).forEach(function (userId) {
+                            defs.push({ Id: newId(), Name: '', UserId: userId, SeriesIds: config.SeriesIds.slice(), JellyfinPlaylistId: '' });
+                        });
+                    }
+
+                    state.playlists = defs.map(function (d) {
+                        var selected = {};
+                        (d.SeriesIds || []).forEach(function (id) { selected[id] = true; });
+                        var name = (d.Name || '').trim() ? d.Name : defaultName(d.UserId);
+                        return { Id: d.Id || newId(), Name: name, UserId: d.UserId || '', JellyfinPlaylistId: d.JellyfinPlaylistId || '', selected: selected };
+                    });
+                    state.dirty = false;
+                }
+
+                // ---------- Tarjeta de una playlist ----------
+                function seriesLabel(item, duplicatedNames) {
+                    return duplicatedNames[item.Name] && item.ProductionYear ? item.Name + ' (' + item.ProductionYear + ')' : item.Name;
+                }
+
+                function refreshMeta(pl) {
+                    var view = views[pl.Id];
+                    if (!view) { return; }
+                    var problems = problemsOf(pl);
+                    view.count.textContent = t('selectedCount', { n: selectedIds(pl).length, total: state.series.length });
+                    view.messages.innerHTML = '';
+                    problems.errors.forEach(function (m) { view.messages.appendChild(el('div', { className: 'ctv-msg err', text: m })); });
+                    problems.warnings.forEach(function (m) { view.messages.appendChild(el('div', { className: 'ctv-msg warn', text: m })); });
+                }
+
+                function refreshAllMeta() {
+                    state.playlists.forEach(refreshMeta);
+                }
+
+                function refreshCopyOptions(pl) {
+                    var view = views[pl.Id];
+                    if (!view) { return; }
+                    var current = view.copySelect.value;
+                    view.copySelect.innerHTML = '';
+                    view.copySelect.appendChild(el('option', { value: '', text: t('copyChoose') }));
+                    state.playlists.filter(function (o) { return o !== pl; }).forEach(function (o) {
+                        var owner = userName(o.UserId) || t('unknownUserOwner');
+                        view.copySelect.appendChild(el('option', { value: o.Id, text: tn('copyOption', selectedIds(o).length, { name: o.Name.trim() || t('noName'), owner: owner }) }));
+                    });
+                    if (Array.prototype.some.call(view.copySelect.options, function (o) { return o.value === current; })) {
+                        view.copySelect.value = current;
+                    }
+                    view.copyReplace.disabled = view.copyAdd.disabled = view.copySelect.options.length < 2;
+                }
+
+                function refreshAllCopyOptions() {
+                    state.playlists.forEach(refreshCopyOptions);
+                }
+
+                function syncChecks(pl) {
+                    var view = views[pl.Id];
+                    Array.prototype.forEach.call(view.series.querySelectorAll('input[type="checkbox"]'), function (box) {
+                        box.checked = !!pl.selected[box.value];
+                    });
+                }
+
+                function applyFilter(pl) {
+                    var view = views[pl.Id];
+                    var needle = norm(view.filter.value.trim());
+                    var onlySelected = view.onlySelected.checked;
+                    Array.prototype.forEach.call(view.series.children, function (item) {
+                        var matches = !needle || item.getAttribute('data-n').indexOf(needle) !== -1;
+                        var passes = !onlySelected || !!pl.selected[item.getAttribute('data-id')];
+                        item.hidden = !(matches && passes);
+                    });
+                }
+
+                function copySeries(target, mode) {
+                    var view = views[target.Id];
+                    var source = state.playlists.filter(function (p) { return p.Id === view.copySelect.value; })[0];
+                    if (!source) {
+                        setStatus(t('statusPickSource'), 'err');
+                        return;
+                    }
+
+                    var sourceIds = selectedIds(source);
+                    if (mode === 'replace') {
+                        target.selected = {};
+                    }
+                    sourceIds.forEach(function (id) { target.selected[id] = true; });
+
+                    syncChecks(target);
+                    applyFilter(target);
+                    markDirty();
+                    refreshAllMeta();
+                    refreshAllCopyOptions();
+                    setStatus(t(mode === 'replace' ? 'statusReplaced' : 'statusAdded', { source: source.Name, target: target.Name, n: sourceIds.length }), 'ok');
+                }
+
+                function buildCard(pl, labels) {
+                    var nameInput = el('input', { type: 'text', maxlength: '120', placeholder: t('namePlaceholder'), 'aria-label': t('namePlaceholder') });
+                    nameInput.value = pl.Name;
+
+                    var userSelect = el('select', { 'aria-label': t('ownerUser') });
+                    state.users.forEach(function (u) { userSelect.appendChild(el('option', { value: u.Id, text: u.Name })); });
+                    if (pl.UserId && !state.usersById[pl.UserId]) {
+                        userSelect.appendChild(el('option', { value: pl.UserId, text: t('unknownUserOption') }));
+                    }
+                    userSelect.value = pl.UserId;
+
+                    var removeButton = el('button', { type: 'button', className: 'ctv-btn ctv-danger', text: t('remove') });
+
+                    var count = el('span', { className: 'ctv-count' });
+                    var messages = el('div');
+                    var meta = el('div', { className: 'ctv-meta' }, [count, messages]);
+
+                    var filter = el('input', { type: 'text', placeholder: t('searchPlaceholder'), 'aria-label': t('searchAria') });
+                    var onlySelected = el('input', { type: 'checkbox' });
+                    var markVisible = el('button', { type: 'button', className: 'ctv-btn', text: t('markVisible') });
+                    var clearAll = el('button', { type: 'button', className: 'ctv-btn', text: t('clearAll') });
+                    var tools = el('div', { className: 'ctv-tools' }, [
+                        filter,
+                        el('label', { className: 'ctv-check' }, [onlySelected, el('span', { text: t('onlySelected') })]),
+                        markVisible,
+                        clearAll
+                    ]);
+
+                    var seriesBox = el('div', { className: 'ctv-series' });
+                    var fragment = document.createDocumentFragment();
+                    state.series.forEach(function (s) {
+                        var box = el('input', { type: 'checkbox', value: s.Id });
+                        box.checked = !!pl.selected[s.Id];
+                        var label = labels[s.Id];
+                        fragment.appendChild(el('label', { className: 'ctv-item', 'data-n': norm(label), 'data-id': s.Id }, [box, el('span', { text: label, title: label })]));
+                    });
+                    seriesBox.appendChild(fragment);
+                    if (state.series.length === 0) {
+                        seriesBox.appendChild(el('div', { className: 'ctv-empty', text: t('noSeriesInLibrary') }));
+                    }
+
+                    var copySelect = el('select', { 'aria-label': t('copyAria') });
+                    var copyReplace = el('button', { type: 'button', className: 'ctv-btn', text: t('replace') });
+                    var copyAdd = el('button', { type: 'button', className: 'ctv-btn', text: t('addSeries') });
+                    var copyRow = el('div', { className: 'ctv-copy' }, [el('span', { text: t('copyFrom') }), copySelect, copyReplace, copyAdd]);
+
+                    var root = el('div', { className: 'ctv-card', 'data-id': pl.Id }, [
+                        el('div', { className: 'ctv-head' }, [
+                            el('label', { className: 'ctv-field' }, [el('span', { text: t('name') }), nameInput]),
+                            el('label', { className: 'ctv-field' }, [el('span', { text: t('user') }), userSelect]),
+                            removeButton
+                        ]),
+                        meta,
+                        tools,
+                        seriesBox,
+                        copyRow
+                    ]);
+
+                    views[pl.Id] = { root: root, count: count, messages: messages, series: seriesBox, filter: filter, onlySelected: onlySelected, copySelect: copySelect, copyReplace: copyReplace, copyAdd: copyAdd };
+
+                    // ---- Esdeveniments ----
+                    nameInput.addEventListener('input', function () {
+                        pl.Name = nameInput.value;
+                        markDirty();
+                        refreshAllMeta();
+                        refreshAllCopyOptions();
+                    });
+
+                    userSelect.addEventListener('change', function () {
+                        var wasDefault = isDefaultNameOf(pl.Name, pl.UserId);
+                        pl.UserId = userSelect.value;
+                        // Si el nombre era el de por defecto del usuario anterior, se actualiza al del nuevo.
+                        if (wasDefault) {
+                            pl.Name = uniqueName(defaultName(pl.UserId), pl.UserId, pl.Id);
+                            nameInput.value = pl.Name;
+                        }
+                        markDirty();
+                        refreshAllMeta();
+                        refreshAllCopyOptions();
+                    });
+
+                    seriesBox.addEventListener('change', function (event) {
+                        var box = event.target;
+                        if (!box || box.type !== 'checkbox') { return; }
+                        if (box.checked) { pl.selected[box.value] = true; } else { delete pl.selected[box.value]; }
+                        markDirty();
+                        refreshAllMeta();
+                        refreshAllCopyOptions();
+                    });
+
+                    filter.addEventListener('input', function () { applyFilter(pl); });
+                    onlySelected.addEventListener('change', function () { applyFilter(pl); });
+
+                    markVisible.addEventListener('click', function () {
+                        Array.prototype.forEach.call(seriesBox.children, function (item) {
+                            if (!item.hidden && item.getAttribute('data-id')) { pl.selected[item.getAttribute('data-id')] = true; }
+                        });
+                        syncChecks(pl);
+                        markDirty();
+                        refreshAllMeta();
+                        refreshAllCopyOptions();
+                    });
+
+                    clearAll.addEventListener('click', function () {
+                        pl.selected = {};
+                        syncChecks(pl);
+                        applyFilter(pl);
+                        markDirty();
+                        refreshAllMeta();
+                        refreshAllCopyOptions();
+                    });
+
+                    copySelect.addEventListener('mousedown', function () { refreshCopyOptions(pl); });
+                    copyReplace.addEventListener('click', function () { copySeries(pl, 'replace'); });
+                    copyAdd.addEventListener('click', function () { copySeries(pl, 'add'); });
+
+                    removeButton.addEventListener('click', function () {
+                        if (!window.confirm(t('confirmRemove', { name: pl.Name }))) {
+                            return;
+                        }
+                        state.playlists = state.playlists.filter(function (p) { return p !== pl; });
+                        root.remove();
+                        delete views[pl.Id];
+                        markDirty();
+                        renderEmptyHint();
+                        refreshAllMeta();
+                        refreshAllCopyOptions();
+                    });
+
+                    return root;
+                }
+
+                function renderEmptyHint() {
+                    var hint = listEl.querySelector('.ctv-empty');
+                    if (state.playlists.length === 0 && !hint) {
+                        listEl.appendChild(el('div', { className: 'ctv-empty', text: t('emptyHint') }));
+                    } else if (state.playlists.length > 0 && hint) {
+                        hint.remove();
+                    }
+                }
+
+                function seriesLabels() {
+                    var counts = {};
+                    state.series.forEach(function (s) { counts[s.Name] = (counts[s.Name] || 0) + 1; });
+                    var duplicated = {};
+                    Object.keys(counts).forEach(function (name) { if (counts[name] > 1) { duplicated[name] = true; } });
+                    var labels = {};
+                    state.series.forEach(function (s) { labels[s.Id] = seriesLabel(s, duplicated); });
+                    return labels;
+                }
+
+                function render() {
+                    listEl.innerHTML = '';
+                    views = {};
+                    var labels = seriesLabels();
+                    state.playlists.forEach(function (pl) { listEl.appendChild(buildCard(pl, labels)); });
+                    renderEmptyHint();
+                    refreshAllMeta();
+                    refreshAllCopyOptions();
+                }
+
+                function addPlaylist() {
+                    if (state.users.length === 0) {
+                        setStatus(t('statusNoUsers'), 'err');
+                        return;
+                    }
+                    var userId = state.users[0].Id;
+                    var pl = { Id: newId(), Name: '', UserId: userId, JellyfinPlaylistId: '', selected: {} };
+                    pl.Name = uniqueName(defaultName(userId), userId, pl.Id);
+                    state.playlists.push(pl);
+                    markDirty();
+
+                    var card = buildCard(pl, seriesLabels());
+                    listEl.appendChild(card);
+                    renderEmptyHint();
+                    refreshAllMeta();
+                    refreshAllCopyOptions();
+                    setStatus(t('statusPlaylistAdded'), 'ok');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.querySelector('input[type="text"]').focus();
+                }
+
+                // ---------- Guardar ----------
+                function validate() {
+                    var errors = [];
+                    if (!state.seriesOk) {
+                        errors.push(t('errSeriesNotLoaded'));
+                    }
+                    state.playlists.forEach(function (pl) {
+                        problemsOf(pl).errors.forEach(function (m) { errors.push(t('errPlaylistPrefix', { name: pl.Name.trim() || t('noNameShort'), message: m })); });
+                    });
+                    return errors;
+                }
+
+                function startTask() {
+                    return ApiClient.getJSON(ApiClient.getUrl('ScheduledTasks')).then(function (tasks) {
+                        var task = (tasks || []).filter(function (t) { return t.Key === TASK_KEY; })[0];
+                        if (!task) { throw new Error('tarea no encontrada'); }
+                        return ApiClient.ajax({ type: 'POST', url: ApiClient.getUrl('ScheduledTasks/Running/' + task.Id) });
+                    });
+                }
+
+                function save(runAfter) {
+                    var errors = validate();
+                    if (errors.length > 0) {
+                        setStatus(errors.join('  '), 'err');
+                        return;
+                    }
+
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(PLUGIN_ID).then(function (config) {
+                        // Se parte de la configuración actual del servidor para no perder el Id de playlist de Jellyfin
+                        // que la tarea haya guardado mientras la página estaba abierta.
+                        var knownJellyfinIds = {};
+                        (config.Playlists || []).forEach(function (p) { knownJellyfinIds[p.Id] = p.JellyfinPlaylistId || ''; });
+
+                        config.Playlists = state.playlists.map(function (pl) {
+                            return {
+                                Id: pl.Id,
+                                Name: pl.Name.trim(),
+                                UserId: pl.UserId,
+                                SeriesIds: selectedIds(pl),
+                                JellyfinPlaylistId: pl.JellyfinPlaylistId || knownJellyfinIds[pl.Id] || ''
+                            };
+                        });
+                        config.SeriesIds = [];
+                        config.UserIds = [];
+                        return ApiClient.updatePluginConfiguration(PLUGIN_ID, config);
                     }).then(function (result) {
-                        console.log('ClassicTV: Got series result:', result);
-
-                        var selector = document.querySelector('#SeriesSelector');
-                        selector.innerHTML = '';
-
-                        if (result.Items && result.Items.length > 0) {
-                            result.Items.forEach(function (serie) {
-                                var option = document.createElement('option');
-                                option.value = serie.Id;
-                                option.textContent = serie.Name;
-                                if (config.SeriesIds && config.SeriesIds.indexOf(serie.Id) !== -1) {
-                                    option.selected = true;
-                                }
-                                selector.appendChild(option);
-                            });
-                            console.log('ClassicTV: Loaded ' + result.Items.length + ' series');
+                        if (window.Dashboard && Dashboard.processPluginConfigurationUpdateResult) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
                         } else {
-                            var option = document.createElement('option');
-                            option.value = "";
-                            option.textContent = "No se encontraron series";
-                            option.disabled = true;
-                            selector.appendChild(option);
-                            console.log('ClassicTV: No series found');
+                            Dashboard.hideLoadingMsg();
                         }
-
-                        Dashboard.hideLoadingMsg();
-                    }).catch(function(error) {
-                        console.error('ClassicTV: Error getting series:', error);
-                        var selector = document.querySelector('#SeriesSelector');
-                        selector.innerHTML = '<option value="">Error al cargar series</option>';
-                        Dashboard.hideLoadingMsg();
-                    });
-                }).catch(function(error) {
-                    console.error('ClassicTV: Error getting plugin config:', error);
-                    Dashboard.hideLoadingMsg();
-                });
-            }
-
-            function loadUsers() {
-                console.log('ClassicTV: Loading users...');
-
-                // Obtener la configuración actual para los usuarios
-                ApiClient.getPluginConfiguration(ClassicTVConfig.pluginUniqueId).then(function (config) {
-                    console.log('ClassicTV: Got plugin config for users:', config);
-
-                    // Obtener todos los usuarios
-                    ApiClient.getUsers().then(function (users) {
-                        console.log('ClassicTV: Got users result:', users);
-
-                        var selector = document.querySelector('#UserSelector');
-                        selector.innerHTML = '';
-
-                        if (users && users.length > 0) {
-                            users.forEach(function (user) {
-                                var option = document.createElement('option');
-                                option.value = user.Id;
-                                option.textContent = user.Name;
-                                if (config.UserIds && config.UserIds.indexOf(user.Id) !== -1) {
-                                    option.selected = true;
-                                }
-                                selector.appendChild(option);
+                        return load().then(function () {
+                            if (!runAfter) {
+                                setStatus(t('savedOk'), 'ok');
+                                return null;
+                            }
+                            return startTask().then(function () {
+                                setStatus(t('savedRun'), 'ok');
+                            }, function () {
+                                setStatus(t('savedRunFailed'), 'err');
                             });
-                            console.log('ClassicTV: Loaded ' + users.length + ' users');
-                        } else {
-                            var option = document.createElement('option');
-                            option.value = "";
-                            option.textContent = "No se encontraron usuarios";
-                            option.disabled = true;
-                            selector.appendChild(option);
-                            console.log('ClassicTV: No users found');
-                        }
-                    }).catch(function(error) {
-                        console.error('ClassicTV: Error getting users:', error);
-                        var selector = document.querySelector('#UserSelector');
-                        selector.innerHTML = '<option value="">Error al cargar usuarios</option>';
+                        });
+                    }).catch(function (error) {
+                        console.error('ClassicTV: error saving config', error);
+                        Dashboard.hideLoadingMsg();
+                        setStatus(t('saveFailed'), 'err');
                     });
-                }).catch(function(error) {
-                    console.error('ClassicTV: Error getting plugin config for users:', error);
-                });
-            }
+                }
 
-            function saveConfig() {
-                console.log('ClassicTV: Saving configuration...');
-                Dashboard.showLoadingMsg();
+                // ---------- Carga ----------
+                function load() {
+                    refreshLanguage();
+                    Dashboard.showLoadingMsg();
+                    var seriesFailed = false;
 
-                ApiClient.getPluginConfiguration(ClassicTVConfig.pluginUniqueId).then(function (config) {
-                    var selectedSeries = Array.from(document.querySelector('#SeriesSelector').selectedOptions).map(function(opt){
-                        return opt.value;
-                    });
-                    var selectedUsers = Array.from(document.querySelector('#UserSelector').selectedOptions).map(function(opt){
-                        return opt.value;
-                    });
-                    
-                    config.SeriesIds = selectedSeries;
-                    config.UserIds = selectedUsers;
+                    return Promise.all([
+                        ApiClient.getPluginConfiguration(PLUGIN_ID),
+                        ApiClient.getUsers().catch(function (error) { console.error('ClassicTV: error loading users', error); return null; }),
+                        ApiClient.getItems(null, {
+                            IncludeItemTypes: 'Series',
+                            Recursive: true,
+                            Fields: 'Id,Name',
+                            SortBy: 'Name',
+                            SortOrder: 'Ascending'
+                        }).catch(function (error) { console.error('ClassicTV: error loading series', error); seriesFailed = true; return null; })
+                    ]).then(function (results) {
+                        var config = results[0];
+                        var users = results[1] || [];
+                        var items = (results[2] && results[2].Items) || [];
 
-                    console.log('ClassicTV: Saving config:', config);
+                        state.users = users.slice().sort(function (a, b) { return a.Name.localeCompare(b.Name, undefined, { sensitivity: 'base' }); });
+                        state.usersById = {};
+                        state.users.forEach(function (u) { state.usersById[u.Id] = u; });
 
-                    ApiClient.updatePluginConfiguration(ClassicTVConfig.pluginUniqueId, config).then(function (result) {
-                        console.log('ClassicTV: Config saved successfully:', result);
-                        Dashboard.processPluginConfigurationUpdateResult(result);
-                    }).catch(function(error) {
-                        console.error('ClassicTV: Error saving config:', error);
+                        state.series = items.slice().sort(function (a, b) { return a.Name.localeCompare(b.Name, undefined, { sensitivity: 'base', numeric: true }); });
+                        state.seriesById = {};
+                        state.series.forEach(function (s) { state.seriesById[s.Id] = s; });
+                        state.seriesOk = !seriesFailed && (state.series.length > 0 || (config.Playlists || []).every(function (p) { return (p.SeriesIds || []).length === 0; }));
+
+                        stateFromConfig(config);
+                        render();
+                        setStatus(state.seriesOk ? '' : t('loadSeriesFailed'), state.seriesOk ? '' : 'err');
+                        Dashboard.hideLoadingMsg();
+                    }).catch(function (error) {
+                        console.error('ClassicTV: error loading configuration', error);
+                        setStatus(t('loadFailed'), 'err');
                         Dashboard.hideLoadingMsg();
                     });
-                }).catch(function(error) {
-                    console.error('ClassicTV: Error getting config for save:', error);
-                    Dashboard.hideLoadingMsg();
+                }
+
+                function onAll(selector, handler) {
+                    Array.prototype.forEach.call(page.querySelectorAll(selector), function (button) { button.addEventListener('click', handler); });
+                }
+
+                onAll('.js-add', addPlaylist);
+                onAll('.js-save', function () { save(false); });
+                onAll('.js-save-run', function () { save(true); });
+                onAll('.js-discard', function () {
+                    if (state.dirty && !window.confirm(t('confirmDiscard'))) {
+                        return;
+                    }
+                    load();
                 });
-            }
 
-            function loadAllData() {
-                loadSeries();
-                loadUsers();
-            }
-
-            // Cargar datos cuando se carga la página
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log('ClassicTV: DOM loaded, loading data...');
-                loadAllData();
-            });
-
-            // También intentar cargar cuando la página se muestra
-            document.querySelector('#configPage').addEventListener('pageshow', function() {
-                console.log('ClassicTV: Page show event, loading data...');
-                loadAllData();
-            });
-
-            // Manejar el envío del formulario
-            document.querySelector('#configForm').addEventListener('submit', function(e) {
-                console.log('ClassicTV: Form submitted');
-                saveConfig();
-                e.preventDefault();
-                return false;
-            });
+                refreshLanguage();
+                page.addEventListener('pageshow', function () { load(); });
+            })();
         </script>
     </div>
 </body>

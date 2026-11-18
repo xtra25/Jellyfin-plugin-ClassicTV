@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Jellyfin.Plugin.ClassicTV.Configuration;
 
 namespace Jellyfin.Plugin.ClassicTV.Tests
 {
@@ -136,6 +137,102 @@ namespace Jellyfin.Plugin.ClassicTV.Tests
                 var before = a.Select(Label).ToList();
                 _ = RoundRobinMixer.Mix(new[] { a, Series("B", 3) }, random: new Random(3));
                 Eq(before, a.Select(Label));
+            });
+
+            // ---------- Regles de les playlists ----------
+            Add("Playlists: sense nom s'usa el nom per defecte amb l'usuari", () =>
+            {
+                True(PlaylistRules.EffectiveName("", "joan") == "ClassicTV Playlist - joan", "nom buit");
+                True(PlaylistRules.EffectiveName("   ", "joan") == "ClassicTV Playlist - joan", "nom amb només espais");
+                True(PlaylistRules.EffectiveName(null, "laia") == "ClassicTV Playlist - laia", "nom nul");
+            });
+
+            Add("Playlists: un nom propi es respecta (retallant espais)", () =>
+            {
+                True(PlaylistRules.EffectiveName("  classicstv laia ", "laia") == "classicstv laia", "nom propi");
+            });
+
+            Add("Playlists: la comparació de noms ignora majúscules i espais als extrems", () =>
+            {
+                True(PlaylistRules.SameName("ClassicTV", "  classictv "), "hauria de coincidir");
+                True(!PlaylistRules.SameName("ClassicTV", "ClassicTV 2"), "no hauria de coincidir");
+                True(!PlaylistRules.SameName(null, "x") && PlaylistRules.SameName(null, null), "nuls");
+            });
+
+            Add("Migració: una playlist per usuari, amb totes les sèries i el nom per defecte (buit)", () =>
+            {
+                var r = PlaylistRules.FromLegacy(new[] { "u1", "u2" }, new[] { "s1", "s2", "s3" });
+                True(r.Count == 2, $"s'esperaven 2 playlists i n'hi ha {r.Count}");
+                Eq(new[] { "u1", "u2" }, r.Select(p => p.UserId));
+                True(r.All(p => p.Name == string.Empty && p.JellyfinPlaylistId == string.Empty), "noms i ids buits");
+                True(r.All(p => p.SeriesIds.SequenceEqual(new[] { "s1", "s2", "s3" })), "totes les sèries");
+                True(r.Select(p => p.Id).Distinct().Count() == 2 && r.All(p => p.Id.Length > 0), "ids de definició únics");
+            });
+
+            Add("Migració: ignora usuaris/sèries buits o repetits (sense distingir majúscules)", () =>
+            {
+                var r = PlaylistRules.FromLegacy(new[] { "U1", "u1", "", " ", "u2" }, new[] { "S1", "s1", "", "s2" });
+                Eq(new[] { "U1", "u2" }, r.Select(p => p.UserId));
+                Eq(new[] { "S1", "s2" }, r[0].SeriesIds);
+            });
+
+            Add("Migració: sense sèries o sense usuaris no crea res", () =>
+            {
+                True(PlaylistRules.FromLegacy(new[] { "u1" }, Array.Empty<string>()).Count == 0, "sense sèries");
+                True(PlaylistRules.FromLegacy(Array.Empty<string>(), new[] { "s1" }).Count == 0, "sense usuaris");
+                True(PlaylistRules.FromLegacy(null, null).Count == 0, "nuls");
+            });
+
+            Add("Migració: cada playlist té la seva pròpia llista de sèries (no compartida)", () =>
+            {
+                var r = PlaylistRules.FromLegacy(new[] { "u1", "u2" }, new[] { "s1", "s2" });
+                r[0].SeriesIds.Add("s3");
+                True(r[1].SeriesIds.Count == 2, "la llista de la segona playlist s'ha modificat");
+            });
+
+            // ---------- Idiomes (Localizer) ----------
+            Add("Idioma: noms de cultura es redueixen a ca/es/en", () =>
+            {
+                var casos = new (string?, string)[]
+                {
+                    ("ca", "ca"), ("ca-ES", "ca"), ("ca_ES", "ca"), ("ca-valencia", "ca"), ("CA", "ca"), ("  ca-es ", "ca"),
+                    ("es", "es"), ("es-ES", "es"), ("es-MX", "es"), ("es_419", "es"), ("ES-ar", "es"),
+                    ("en", "en"), ("en-US", "en"), ("EN-gb", "en")
+                };
+                foreach (var (entrada, esperat) in casos)
+                {
+                    True(Localizer.Resolve(entrada) == esperat, $"'{entrada}' -> '{Localizer.Resolve(entrada)}' (esperat '{esperat}')");
+                }
+            });
+
+            Add("Idioma: els idiomes no suportats, buits o nuls cauen a anglès", () =>
+            {
+                foreach (var entrada in new string?[] { "fr", "fr-FR", "de-DE", "pt-BR", "gl", "eu", "zh-CN", "", "   ", null, "-", "_", "cat", "esp", "spanish" })
+                {
+                    True(Localizer.Resolve(entrada) == "en", $"'{entrada}' hauria de ser 'en' i és '{Localizer.Resolve(entrada)}'");
+                }
+            });
+
+            Add("Idioma: nom i descripció de la tasca existeixen en els tres idiomes i són diferents", () =>
+            {
+                var noms = new[] { "ca", "es", "en" }.Select(Localizer.TaskName).ToList();
+                var descripcions = new[] { "ca", "es", "en" }.Select(Localizer.TaskDescription).ToList();
+                True(noms.Distinct().Count() == 3, "els noms haurien de ser diferents: " + string.Join(" | ", noms));
+                True(descripcions.Distinct().Count() == 3, "les descripcions haurien de ser diferents");
+                True(noms.All(n => n.Contains("ClassicTV")), "el nom ha de dir ClassicTV");
+                True(noms.Concat(descripcions).All(x => !string.IsNullOrWhiteSpace(x)), "text buit");
+            });
+
+            Add("Idioma: el nom i la descripció segueixen la cultura (i l'anglès és el per defecte)", () =>
+            {
+                True(Localizer.TaskName("ca-ES") == "Genera les llistes de reproducció de ClassicTV", "ca");
+                True(Localizer.TaskName("es-MX") == "Generar las listas de reproducción de ClassicTV", "es");
+                True(Localizer.TaskName("en-US") == "Generate ClassicTV playlists", "en");
+                True(Localizer.TaskName("fr-FR") == "Generate ClassicTV playlists", "fr -> en");
+                True(Localizer.TaskName(null) == "Generate ClassicTV playlists", "null -> en");
+                True(Localizer.TaskDescription("ca").StartsWith("Barreja", StringComparison.Ordinal), "descripció ca");
+                True(Localizer.TaskDescription("es").StartsWith("Mezcla", StringComparison.Ordinal), "descripció es");
+                True(Localizer.TaskDescription("xx").StartsWith("Mixes", StringComparison.Ordinal), "descripció en");
             });
 
             return Run();

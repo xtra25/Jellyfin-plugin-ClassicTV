@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Proves de la lògica pura (ordenació i barreja). Compila només els fitxers que NO depenen de Jellyfin,
+    Proves de la lògica pura (ordenació, barreja, regles de les playlists i idiomes). Compila només els fitxers que NO depenen de Jellyfin,
     així que no cal restaurar cap paquet NuGet.
     Executar des de l'arrel del repo:  dotnet run  (amb el parametre de projecte apuntant a aquesta carpeta)
   -->
@@ -18,6 +18,8 @@
   <ItemGroup>
     <Compile Include="..\Jellyfin.Plugin.ClassicTV\EpisodeOrdering.cs" Link="EpisodeOrdering.cs" />
     <Compile Include="..\Jellyfin.Plugin.ClassicTV\RoundRobinMixer.cs" Link="RoundRobinMixer.cs" />
+    <Compile Include="..\Jellyfin.Plugin.ClassicTV\Configuration\PlaylistDefinition.cs" Link="PlaylistDefinition.cs" />
+    <Compile Include="..\Jellyfin.Plugin.ClassicTV\Localizer.cs" Link="Localizer.cs" />
   </ItemGroup>
 
 </Project>
