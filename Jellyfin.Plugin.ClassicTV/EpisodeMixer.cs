@@ -1,65 +1,21 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using MediaBrowser.Controller.Entities.TV;
-using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.ClassicTV
 {
     public static class EpisodeMixer
     {
         /// <summary>
-        /// Mezcla los episodios de varias series en orden interno usando round-robin.
-        /// Limita el número total de episodios para evitar problemas de memoria.
+        /// Mescla els episodis de diverses sèries en round-robin mantenint l'ordre intern de cada sèrie.
+        /// Limita el nombre total d'episodis per evitar problemes de rendiment.
         /// </summary>
-        public static List<Episode> MixEpisodesRoundRobin(Dictionary<string, List<Episode>> seriesEpisodes)
+        /// <param name="series">Episodis de cada sèrie, ja ordenats.</param>
+        /// <param name="maxEpisodes">Nombre màxim d'episodis del resultat.</param>
+        /// <returns>Llista mesclada.</returns>
+        public static List<Episode> MixEpisodesRoundRobin(IEnumerable<SeriesEpisodes> series, int maxEpisodes = RoundRobinMixer.DefaultMaxItems)
         {
-            const int maxEpisodes = 1000; // Límite máximo de episodios
-            var result = new List<Episode>();
-            var random = new Random(Guid.NewGuid().GetHashCode());
-
-            // Crear listas de episodios para cada serie
-            var episodeLists = seriesEpisodes.Values
-                .Select(list => list != null ? new List<Episode>(list) : new List<Episode>())
-                .ToList();
-
-            // Reordenar aleatoriamente el orden de las series para obtener una mezcla distinta cada ejecución
-            Shuffle(episodeLists, random);
-
-            var currentIndexes = new int[episodeLists.Count]; // Índices actuales para cada serie
-
-            bool hasMoreEpisodes;
-            do
-            {
-                hasMoreEpisodes = false;
-
-                // Recorrer cada serie y tomar el siguiente episodio disponible
-                for (int i = 0; i < episodeLists.Count; i++)
-                {
-                    var episodeList = episodeLists[i];
-                    var currentIndex = currentIndexes[i];
-
-                    // Si esta serie tiene más episodios disponibles
-                    if (currentIndex < episodeList.Count && result.Count < maxEpisodes)
-                    {
-                        var episode = episodeList[currentIndex];
-                        result.Add(episode);
-                        currentIndexes[i]++; // Avanzar al siguiente episodio de esta serie
-                        hasMoreEpisodes = true;
-                    }
-                }
-            } while (hasMoreEpisodes && result.Count < maxEpisodes);
-
-            return result;
-        }
-
-        private static void Shuffle<T>(IList<T> list, Random random)
-        {
-            for (int i = list.Count - 1; i > 0; i--)
-            {
-                int j = random.Next(i + 1);
-                (list[i], list[j]) = (list[j], list[i]);
-            }
+            return RoundRobinMixer.Mix(series.Select(s => s.Episodes), maxEpisodes);
         }
     }
 }

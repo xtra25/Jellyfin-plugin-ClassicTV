@@ -1,16 +1,20 @@
 ---
-name: "Template"
+name: "ClassicTV"
 guid: "eb5d7894-8eef-4b36-aa6f-5d124e828ce1"
 version: "1.0.0.0"
-targetAbi: "10.9.0.0"
-framework: "net8.0"
-overview: "Short description about your plugin"
+targetAbi: "12.0.0.0"
+framework: "net10.0"
+overview: "Mix episodes of several series into one round-robin playlist"
 description: >
-  This is a longer description that can span more than one
-  line and include details about your plugin.
+  Mixes the unwatched episodes of the selected series into a single playlist
+  per user, alternating between series (round-robin) while keeping the
+  internal order of each series.
 category: "General"
-owner: "jellyfin"
+owner: "xtra25"
 artifacts:
-- "Jellyfin.Plugin.Template.dll"
+- "Jellyfin.Plugin.ClassicTV.dll"
 changelog: >
-  changelog
+  Fixes: series with the same name no longer overwrite each other; the
+  "unwatched" filter now fails loudly instead of silently including watched
+  episodes; specials are ordered last; the task reports progress and can be
+  cancelled.

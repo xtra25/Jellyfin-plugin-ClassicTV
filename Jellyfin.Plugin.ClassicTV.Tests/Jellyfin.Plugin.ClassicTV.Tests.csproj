@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Proves de la lògica pura (ordenació i barreja). Compila només els fitxers que NO depenen de Jellyfin,
+    així que no cal restaurar cap paquet NuGet.
+    Executar des de l'arrel del repo:  dotnet run  (amb el parametre de projecte apuntant a aquesta carpeta)
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Jellyfin.Plugin.ClassicTV.Tests</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <UseAppHost>false</UseAppHost>
+    <LangVersion>12</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Jellyfin.Plugin.ClassicTV\EpisodeOrdering.cs" Link="EpisodeOrdering.cs" />
+    <Compile Include="..\Jellyfin.Plugin.ClassicTV\RoundRobinMixer.cs" Link="RoundRobinMixer.cs" />
+  </ItemGroup>
+
+</Project>

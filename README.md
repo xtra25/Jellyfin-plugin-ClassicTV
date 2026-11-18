@@ -14,8 +14,8 @@ A Jellyfin plugin that allows mixing episodes from multiple selected series into
 ## Installation
 
 ### Requirements
-- Jellyfin Server 10.9.0 or higher
-- .NET 8.0 Runtime
+- Jellyfin Server 12.x (the plugin must be built against Jellyfin 12; plugins built for 10.x or 11.x will not load)
+- .NET 10 SDK to build it (the Jellyfin 12 server already ships its own runtime)
 
 ### Installation steps
 
@@ -54,7 +54,7 @@ A Jellyfin plugin that allows mixing episodes from multiple selected series into
 
 1. **Run the task manually**
    - Go to **Dashboard** → **Scheduled Tasks**
-   - Find "Generate ClassicTV Playlist"
+   - Find "Generar playlist ClassicTV"
    - Click **Run Now**
 
 2. **Verify the playlist**
@@ -68,10 +68,10 @@ A Jellyfin plugin that allows mixing episodes from multiple selected series into
 
 The plugin mixes episodes using a **round-robin** algorithm:
 
-1. **Sort episodes**: Each series maintains its internal chronological order
+1. **Sort episodes**: Each series keeps its internal order: numbered seasons ascending, then episodes without a season, and **specials (season 0) last**. Within a season, episodes are ordered by episode number (those without a number go last), then by premiere date and name
 2. **Filter unwatched**: Only includes episodes that the user hasn't watched
-3. **Alternating mix**: Takes one episode from each series in rotation
-4. **Example**:
+3. **Alternating mix**: Takes one episode from each series in rotation. The order of the series is **shuffled randomly on every run**, so the playlist doesn't always start with the same series
+4. **Example** (one possible result; the order of the series inside each round changes from run to run):
    ```
    Series A: Ep1, Ep2, Ep3, Ep4
    Series B: Ep1, Ep2
@@ -79,6 +79,7 @@ The plugin mixes episodes using a **round-robin** algorithm:
 
    Result: A1, B1, C1, A2, B2, C2, A3, C3, A4
    ```
+5. **Same-name series**: Series are identified by their Id, not their name, so two series with the same name (e.g. a remake) are both included
 
 ### Playlist features
 
@@ -99,7 +100,7 @@ The plugin mixes episodes using a **round-robin** algorithm:
    ```
 
 2. **Development requirements**
-   - .NET 8.0 SDK
+   - .NET 10 SDK
    - Visual Studio 2022 or VS Code
 
 3. **Compile**
@@ -109,7 +110,7 @@ The plugin mixes episodes using a **round-robin** algorithm:
    ```
 
 4. **Install**
-   - The DLL file is generated in `bin/Debug/net8.0/`
+   - The DLL file is generated in `bin/Debug/net10.0/`
    - Copy `Jellyfin.Plugin.ClassicTV.dll` to Jellyfin's plugins folder
 
 ### Project structure
@@ -119,11 +120,23 @@ Jellyfin.Plugin.ClassicTV/
 ├── Plugin.cs                    # Main plugin class
 ├── Configuration/
 │   ├── PluginConfiguration.cs   # Plugin configuration
-│   └── configPage.html         # Web configuration page
-├── EpisodeFetcher.cs           # Gets episodes from series
-├── EpisodeMixer.cs             # Round-robin mixing algorithm
-├── GeneratePlaylistTask.cs     # Scheduled task to generate playlists
+│   └── configPage.html          # Web configuration page
+├── EpisodeFetcher.cs            # Gets the unwatched episodes of each series
+├── EpisodeOrdering.cs           # Episode ordering (no Jellyfin dependencies)
+├── RoundRobinMixer.cs           # Round-robin mixing (no Jellyfin dependencies)
+├── EpisodeMixer.cs              # Adapts the mixer to Jellyfin episodes
+├── SeriesEpisodes.cs            # Episodes of one series (identified by Id)
+├── GeneratePlaylistTask.cs      # Scheduled task to generate playlists
 └── Jellyfin.Plugin.ClassicTV.csproj
+Jellyfin.Plugin.ClassicTV.Tests/ # Tests for the ordering and mixing logic
+```
+
+### Run the tests
+
+The ordering and mixing logic has no Jellyfin dependencies and has its own tests (no NuGet packages needed):
+
+```bash
+dotnet run --project Jellyfin.Plugin.ClassicTV.Tests
 ```
 
 ## Troubleshooting
@@ -145,7 +158,7 @@ Jellyfin.Plugin.ClassicTV/
 
 ### Playlist doesn't update
 - If you see multiple playlists with the same name, update the plugin: now the playlist is overwritten correctly and no duplicates are created
-- Manually run the "Generate ClassicTV Playlist" task
+- Manually run the "Generar playlist ClassicTV" task
 - Verify that selected series haven't changed
 - Check that unwatched episodes are available
 
